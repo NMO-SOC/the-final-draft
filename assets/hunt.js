@@ -1,5 +1,5 @@
-import { sb, roman, clock } from './config.js?v=5';
-import { renderGrid } from './grid.js?v=5';
+import { sb, roman, clock } from './config.js?v=6';
+import { renderGrid } from './grid.js?v=6';
 
 const stageEl = document.getElementById('stage');
 const nameEl  = document.getElementById('teamname');
@@ -171,8 +171,8 @@ function fail(t) { stageEl.innerHTML = `<div class="notice bad">${t}</div>`; }
 
 // Live: hints arriving, locks, teacher moving your stage
 sb.channel('me')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'hints' }, load)
-  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'teams' }, load)
+  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'teams' }, load)\n  .on('postgres_changes', { event: '*', schema: 'public', table: 'hints' }, load)
+  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'teams' }, load)\n  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'teams' }, load)
   .subscribe();
 
 load();
