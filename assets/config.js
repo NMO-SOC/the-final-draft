@@ -3,8 +3,8 @@
 // Row Level Security is what protects your data, not the secrecy of this key.
 // Never put the service_role key anywhere near this repository.
 
-export const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
-export const SUPABASE_ANON_KEY = 'YOUR-ANON-KEY';
+export const SUPABASE_URL = 'https://rlgldhmxmarjrfmkanjo.supabase.co';
+export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsZ2xkaG14bWFyanJmbWthbmpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MzMzODEsImV4cCI6MjEwNDQwOTM4MX0.RR2AeHwthIt5YaWOCMgY-vc2kwONfgpx2TfnbWdAiYc' ;
 
 // Team logins are real Supabase Auth accounts using a synthetic address,
 // so a team signs in with a name rather than an email.
