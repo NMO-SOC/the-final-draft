@@ -6,9 +6,10 @@ let teams = [], attempts = [], hints = [], settings = null;
 async function boot() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return;
-  const { data: t } = await sb.from('teachers').select('auth_uid').maybeSingle();
+  const { data: t, error: te } = await sb.from('teachers').select('auth_uid').maybeSingle();
+  if (te) console.error('teacher lookup error', te);
   if (!t) { el('loginmsg').innerHTML =
-    '<div class="notice bad">That account is signed in but is not a teacher account.</div>'; return; }
+    `<div class="notice bad">Signed in as ${session.user.email}, but the teacher check returned nothing.${te ? ' Error: ' + te.message : ''}</div>`; return; }
   el('login').hidden = true;
   el('panel').hidden = false;
   await refresh();
@@ -21,7 +22,9 @@ el('login').addEventListener('submit', async e => {
   const { error } = await sb.auth.signInWithPassword({
     email: el('em').value.trim(), password: el('pw').value });
   el('loginmsg').innerHTML = error
-    ? '<div class="notice bad">Those details do not match.</div>' : '';
+    ? `<div class="notice bad">Sign-in failed: ${error.message} (${error.status || 'no status'})</div>`
+    : '';
+  if (error) console.error('auth error', error);
   if (!error) boot();
 });
 
