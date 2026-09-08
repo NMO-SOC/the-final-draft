@@ -1,4 +1,4 @@
-import { sb, clock } from './config.js?v=4';
+import { sb, clock } from './config.js?v=5';
 
 const el = id => document.getElementById(id);
 let teams = [], attempts = [], hints = [], settings = null;

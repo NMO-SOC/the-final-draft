@@ -1,5 +1,5 @@
-import { sb, roman, clock } from './config.js?v=4';
-import { renderGrid } from './grid.js?v=4';
+import { sb, roman, clock } from './config.js?v=5';
+import { renderGrid } from './grid.js?v=5';
 
 const stageEl = document.getElementById('stage');
 const nameEl  = document.getElementById('teamname');
@@ -43,7 +43,7 @@ function blocked(d) {
 
 function finished(d) {
   stageEl.innerHTML = `<p class="numeral">&#10003;</p>
-    <h2>The hunt is complete</h2>
+    <h2>The last draft is finished</h2>
     <p>Every stage cleared. Your finishing time is with your teacher.</p>`;
 }
 
