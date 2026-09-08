@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Hunt control</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<main class="wide">
+  <div class="masthead">
+    <h1>Hunt control</h1>
+    <p class="sub">The Great Literary Hunt</p>
+  </div>
+
+  <form id="login">
+    <label for="em">Email</label>
+    <input id="em" type="text" autocomplete="username" required>
+    <label for="pw" style="margin-top:1rem">Password</label>
+    <input id="pw" type="password" autocomplete="current-password" required>
+    <div class="row"><button type="submit">Sign in</button></div>
+    <div id="loginmsg"></div>
+  </form>
+
+  <div id="panel" hidden>
+    <div class="row" id="controls"></div>
+    <div class="cols">
+      <div>
+        <h2>Teams</h2>
+        <table class="teams"><thead><tr>
+          <th>Team</th><th>Stage</th><th>On stage</th><th>Wrong</th>
+          <th>Flags</th><th>Penalty</th><th>Actions</th>
+        </tr></thead><tbody id="teams"></tbody></table>
+
+        <h2>Hint requests</h2>
+        <div id="hints"></div>
+      </div>
+      <div>
+        <h2>Activity</h2>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+  </div>
+</main>
+<script type="module" src="assets/teacher.js"></script>
+</body>
+</html>

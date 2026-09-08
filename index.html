@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>The Great Literary Hunt</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<main>
+  <div class="masthead">
+    <h1>The Great Literary Hunt</h1>
+    <p class="sub">Ten stages. One trail. Everything is logged.</p>
+  </div>
+
+  <p>Sign in with your team name and the password your teacher gave you.
+     One device per team &mdash; signing in somewhere else will end this session.</p>
+
+  <form id="login">
+    <label for="team">Team name</label>
+    <input id="team" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+    <label for="pw" style="margin-top:1rem">Password</label>
+    <input id="pw" type="password" autocomplete="current-password" required>
+    <div class="row"><button type="submit">Start the hunt</button></div>
+  </form>
+
+  <div id="msg"></div>
+
+  <p class="aside" style="margin-top:3rem">Nothing here can be answered by searching.
+     Answers that only a machine would give are recorded and cost you time.</p>
+</main>
+
+<script type="module">
+import { sb, slugToEmail } from './assets/config.js';
+const msg = document.getElementById('msg');
+
+const { data: { session } } = await sb.auth.getSession();
+if (session) location.href = 'hunt.html';
+
+document.getElementById('login').addEventListener('submit', async e => {
+  e.preventDefault();
+  msg.innerHTML = '';
+  const email = slugToEmail(document.getElementById('team').value);
+  const password = document.getElementById('pw').value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    msg.innerHTML = '<div class="notice bad">That team name and password do not match. Check the card you were given.</div>';
+    return;
+  }
+  location.href = 'hunt.html';
+});
+</script>
+</body>
+</html>

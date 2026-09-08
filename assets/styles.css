@@ -1,0 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,500;0,6..72,600;1,6..72,300&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root{
+  --ground:#18262A;
+  --panel:#20343A;
+  --edge:#2E474E;
+  --ink:#EAE3D3;
+  --muted:#93A8A6;
+  --brass:#C79238;
+  --alarm:#B65A44;
+  --ok:#7FA37A;
+  --serif:'Newsreader',Georgia,serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--serif);
+  font-size:19px;
+  line-height:1.6;
+  font-weight:300;
+  -webkit-font-smoothing:antialiased;
+}
+main{max-width:40rem;margin:0 auto;padding:3rem 1.5rem 6rem}
+a{color:var(--brass)}
+
+h1{font-size:2.1rem;font-weight:600;line-height:1.15;margin:0 0 .25rem}
+h2{font-size:1.3rem;font-weight:500;margin:2.5rem 0 .5rem}
+p{margin:0 0 1rem}
+
+.masthead{border-bottom:1px solid var(--edge);padding-bottom:1.25rem;margin-bottom:2rem}
+.masthead .sub{color:var(--muted);font-style:italic;margin:0}
+
+/* Stage hero: the numeral is the memorable element */
+.numeral{
+  font-size:clamp(4.5rem,18vw,8rem);
+  line-height:.85;
+  font-weight:300;
+  color:var(--brass);
+  letter-spacing:-.02em;
+  margin:0 0 .5rem;
+}
+.of{font-family:var(--mono);font-size:.8rem;color:var(--muted);display:block;margin-top:.75rem}
+
+.body p{max-width:34rem}
+.verse{border-left:2px solid var(--brass);padding-left:1.25rem;margin:1.5rem 0;font-style:italic}
+.gap{display:inline-block;min-width:4.5rem;border-bottom:1px solid var(--brass);
+     text-align:center;font-family:var(--mono);font-size:.75rem;color:var(--brass);font-style:normal}
+.who{font-weight:600;font-style:normal;margin-bottom:.15rem}
+.ref{font-family:var(--mono);font-size:.95rem;color:var(--brass)}
+.aside{color:var(--muted);font-size:.95rem}
+
+/* Answer */
+form{margin-top:2rem}
+label{display:block;font-size:.95rem;color:var(--muted);margin-bottom:.4rem}
+input[type=text],input[type=password]{
+  width:100%;background:var(--panel);border:1px solid var(--edge);color:var(--ink);
+  font-family:var(--mono);font-size:1rem;padding:.85rem 1rem;border-radius:2px;
+}
+input:focus-visible,button:focus-visible,select:focus-visible{
+  outline:2px solid var(--brass);outline-offset:2px}
+button{
+  font-family:var(--serif);font-size:1rem;background:var(--brass);color:#17252A;
+  border:0;padding:.75rem 1.5rem;border-radius:2px;cursor:pointer;font-weight:500;
+}
+button.quiet{background:transparent;color:var(--ink);border:1px solid var(--edge)}
+button:disabled{opacity:.4;cursor:not-allowed}
+.row{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;margin-top:1rem}
+
+.notice{padding:.85rem 1rem;border-left:3px solid var(--edge);background:var(--panel);margin:1.5rem 0}
+.notice.bad{border-color:var(--alarm)}
+.notice.good{border-color:var(--ok)}
+.notice.hint{border-color:var(--brass)}
+
+.status{display:flex;gap:1.5rem;font-family:var(--mono);font-size:.8rem;color:var(--muted);
+        border-top:1px solid var(--edge);margin-top:3rem;padding-top:1rem;flex-wrap:wrap}
+
+/* Grid puzzle */
+.clues{list-style:none;padding:0;margin:1.5rem 0}
+.clues li{padding:.5rem .75rem;border-left:2px solid var(--edge);margin-bottom:.4rem;cursor:pointer;
+          font-size:.95rem;user-select:none}
+.clues li.used{color:var(--muted);text-decoration:line-through;border-color:var(--brass)}
+table.grid{width:100%;border-collapse:collapse;margin:1.5rem 0}
+table.grid th{font-size:.8rem;font-family:var(--mono);color:var(--muted);font-weight:400;
+              text-align:left;padding:.4rem}
+table.grid td{padding:.3rem}
+table.grid select{width:100%;background:var(--panel);border:1px solid var(--edge);color:var(--ink);
+                  font-family:var(--serif);font-size:.95rem;padding:.5rem;border-radius:2px}
+
+/* Teacher */
+.wide{max-width:78rem}
+table.teams{width:100%;border-collapse:collapse;font-size:.95rem}
+table.teams th{text-align:left;font-family:var(--mono);font-size:.75rem;color:var(--muted);
+               font-weight:400;border-bottom:1px solid var(--edge);padding:.5rem .6rem}
+table.teams td{border-bottom:1px solid var(--edge);padding:.6rem}
+table.teams tr.flagged td{background:rgba(182,90,68,.12)}
+.chip{font-family:var(--mono);font-size:.7rem;padding:.15rem .45rem;border:1px solid var(--edge)}
+.chip.alert{border-color:var(--alarm);color:var(--alarm)}
+.log{font-family:var(--mono);font-size:.78rem;line-height:1.8;max-height:22rem;overflow:auto}
+.log .alert{color:var(--alarm)}
+.log .warn{color:var(--brass)}
+.log time{color:var(--muted);margin-right:.6rem}
+.cols{display:grid;grid-template-columns:1fr;gap:2.5rem}
+@media(min-width:60rem){.cols{grid-template-columns:2fr 1fr}}
+
+@media(prefers-reduced-motion:no-preference){
+  .reveal{animation:rise .5s ease-out}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+}
