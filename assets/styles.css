@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,500;0,6..72,600;1,6..72,300&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root{
-  --ground:#18262A;
-  --panel:#20343A;
-  --edge:#2E474E;
-  --ink:#EAE3D3;
-  --muted:#93A8A6;
-  --brass:#C79238;
-  --alarm:#B65A44;
-  --ok:#7FA37A;
+  --ground:#F2F1EC;
+  --panel:#E7E5DD;
+  --edge:#C8C4B6;
+  --ink:#1C222B;
+  --muted:#67655D;
+  --brass:#1F3A5F;
+  --alarm:#8C2F2A;
+  --ok:#4A6B45;
   --serif:'Newsreader',Georgia,serif;
   --mono:'IBM Plex Mono',ui-monospace,monospace;
 }
@@ -57,13 +57,13 @@ p{margin:0 0 1rem}
 form{margin-top:2rem}
 label{display:block;font-size:.95rem;color:var(--muted);margin-bottom:.4rem}
 input[type=text],input[type=password]{
-  width:100%;background:var(--panel);border:1px solid var(--edge);color:var(--ink);
+  width:100%;background:#FBFAF7;border:1px solid var(--edge);color:var(--ink);
   font-family:var(--mono);font-size:1rem;padding:.85rem 1rem;border-radius:2px;
 }
 input:focus-visible,button:focus-visible,select:focus-visible{
   outline:2px solid var(--brass);outline-offset:2px}
 button{
-  font-family:var(--serif);font-size:1rem;background:var(--brass);color:#17252A;
+  font-family:var(--serif);font-size:1rem;background:var(--brass);color:#F7F6F2;
   border:0;padding:.75rem 1.5rem;border-radius:2px;cursor:pointer;font-weight:500;
 }
 button.quiet{background:transparent;color:var(--ink);border:1px solid var(--edge)}
@@ -87,7 +87,7 @@ table.grid{width:100%;border-collapse:collapse;margin:1.5rem 0}
 table.grid th{font-size:.8rem;font-family:var(--mono);color:var(--muted);font-weight:400;
               text-align:left;padding:.4rem}
 table.grid td{padding:.3rem}
-table.grid select{width:100%;background:var(--panel);border:1px solid var(--edge);color:var(--ink);
+table.grid select{width:100%;background:#FBFAF7;border:1px solid var(--edge);color:var(--ink);
                   font-family:var(--serif);font-size:.95rem;padding:.5rem;border-radius:2px}
 
 /* Teacher */
@@ -96,7 +96,7 @@ table.teams{width:100%;border-collapse:collapse;font-size:.95rem}
 table.teams th{text-align:left;font-family:var(--mono);font-size:.75rem;color:var(--muted);
                font-weight:400;border-bottom:1px solid var(--edge);padding:.5rem .6rem}
 table.teams td{border-bottom:1px solid var(--edge);padding:.6rem}
-table.teams tr.flagged td{background:rgba(182,90,68,.12)}
+table.teams tr.flagged td{background:rgba(140,47,42,.10)}
 .chip{font-family:var(--mono);font-size:.7rem;padding:.15rem .45rem;border:1px solid var(--edge)}
 .chip.alert{border-color:var(--alarm);color:var(--alarm)}
 .log{font-family:var(--mono);font-size:.78rem;line-height:1.8;max-height:22rem;overflow:auto}
