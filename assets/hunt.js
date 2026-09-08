@@ -1,5 +1,5 @@
-import { sb, roman, clock } from './config.js?v=2';
-import { renderGrid } from './grid.js?v=2';
+import { sb, roman, clock } from './config.js?v=4';
+import { renderGrid } from './grid.js?v=4';
 
 const stageEl = document.getElementById('stage');
 const nameEl  = document.getElementById('teamname');
@@ -51,9 +51,13 @@ function render() {
   const d = state;
   stageEl.innerHTML = `
     <div class="reveal">
-      <p class="numeral">${roman(d.stage)}<span class="of">Stage ${d.stage} of ${d.total}</span></p>
-      <h2>${d.title}</h2>
-      ${d.subtitle ? `<p class="aside">${d.subtitle}</p>` : ''}
+      <div class="stagehead">
+        <p class="numeral">${roman(d.stage)}</p>
+        <span class="of">Stage ${d.stage} of ${d.total}</span>
+        <h2>${d.title}</h2>
+        ${d.subtitle ? `<p class="aside">${d.subtitle}</p>` : ''}
+        <hr class="rule">
+      </div>
       <div class="body">${d.body_html}</div>
       <div id="puzzle"></div>
       <div id="hintbox"></div>
