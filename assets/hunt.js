@@ -171,8 +171,9 @@ function fail(t) { stageEl.innerHTML = `<div class="notice bad">${t}</div>`; }
 
 // Live: hints arriving, locks, teacher moving your stage
 sb.channel('realtime:public')
-  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'teams' }, load)\n  .on('postgres_changes', { event: '*', schema: 'public', table: 'hints' }, load)
-  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'teams' }, load)\n  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'teams' }, load)
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, load)
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'hints' }, load)
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, load)
   .subscribe();
 
 load();
