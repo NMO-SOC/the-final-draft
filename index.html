@@ -32,7 +32,7 @@
 </main>
 
 <script type="module">
-import { sb, slugToEmail } from './assets/config.js';
+import { sb, slugToEmail } from './assets/config.js?v=2';
 const msg = document.getElementById('msg');
 
 const { data: { session } } = await sb.auth.getSession();
