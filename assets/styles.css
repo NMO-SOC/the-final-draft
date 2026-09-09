@@ -89,8 +89,9 @@ p{margin:0 0 1rem}
 .teacher-grid img{width:100%;border-radius:var(--radius);border:1px solid var(--edge);display:block}
 @media(max-width:30rem){.teacher-grid{flex-wrap:wrap}.teacher-grid figure{flex:1 1 45%}}
 
-/* Standings */
-.board{max-width:38rem;margin:3rem auto 0;padding:0 1.5rem}
+/* Standings. Sits inside main, which already caps the column and pads it,
+   so it must not re-apply either or it ends up inset from the stage text. */
+.board{margin:3rem 0 0}
 .board h2{font-size:1rem;font-variant:small-caps;letter-spacing:.12em;color:var(--muted);
           font-weight:600;margin:0 0 .75rem;border-bottom:1px solid var(--edge);padding-bottom:.4rem}
 .board-row{display:flex;gap:.75rem;align-items:baseline;padding:.4rem 0;
@@ -102,7 +103,7 @@ p{margin:0 0 1rem}
 .board-row.you .board-name{font-weight:600;color:var(--brass)}
 .board-row.you .board-pos{color:var(--brass)}
 
-.chat{max-width:38rem;margin:0 auto 3rem;padding:0 1.5rem}
+.chat{margin:2.5rem 0 0}
 .chat #chat-toggle{width:100%}
 .chat #chat-panel{border:1px solid var(--edge);background:var(--panel);margin-top:.75rem;padding:1rem}
 .chat-log{max-height:14rem;overflow-y:auto;display:flex;flex-direction:column;gap:.75rem;margin-bottom:.75rem}
