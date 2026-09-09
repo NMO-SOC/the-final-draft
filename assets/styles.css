@@ -68,8 +68,8 @@ p{margin:0 0 1rem}
 .ref{font-family:var(--mono);font-size:.9rem;color:var(--brass);letter-spacing:.02em}
 .aside{color:var(--muted);font-size:.95rem}
 
-.teacher-grid{display:flex;gap:1rem;flex-wrap:wrap;margin:1.5rem 0}
-.teacher-grid figure{margin:0;flex:1 1 8rem;max-width:9rem}
+.teacher-grid{display:flex;gap:.6rem;flex-wrap:nowrap;margin:1.5rem 0}
+.teacher-grid figure{margin:0;flex:1 1 0;min-width:0}
 .teacher-grid img{width:100%;border-radius:.3rem;border:1px solid var(--edge);display:block}
 
 /* Answer */
