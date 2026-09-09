@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title>The Last Draft</title>
-<link rel="stylesheet" href="assets/styles.css?v=14">
+<link rel="stylesheet" href="assets/styles.css?v=15">
 </head>
 <body>
 <main id="app">
@@ -14,7 +14,17 @@
     <p class="sub">The Last Draft</p>
   </div>
   <div id="stage"></div>
+  <div id="chat" class="chat">
+    <button id="chat-toggle" class="quiet">Message your teacher</button>
+    <div id="chat-panel" hidden>
+      <div id="chat-log" class="chat-log"></div>
+      <form id="chat-form" class="row">
+        <input id="chat-input" type="text" autocomplete="off" placeholder="Type a message&hellip;">
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  </div>
 </main>
-<script type="module" src="assets/hunt.js?v=14"></script>
+<script type="module" src="assets/hunt.js?v=15"></script>
 </body>
 </html>

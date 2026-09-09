@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title>The Last Draft — control</title>
-<link rel="stylesheet" href="assets/styles.css?v=14">
+<link rel="stylesheet" href="assets/styles.css?v=15">
 </head>
 <body>
 <main class="wide">
@@ -46,6 +46,16 @@
         <div>
           <h2>Activity</h2>
           <div class="log" id="log"></div>
+          <h2>Messages</h2>
+          <div class="row" style="align-items:center;gap:1rem">
+            <label for="chat-team-pick" style="margin:0">Team</label>
+            <select id="chat-team-pick" style="width:auto"></select>
+          </div>
+          <div id="chat-log" class="chat-log" style="margin-top:.75rem"></div>
+          <form id="chat-form" class="row">
+            <input id="chat-input" type="text" autocomplete="off" placeholder="Reply&hellip;">
+            <button type="submit">Send</button>
+          </form>
         </div>
       </div>
     </div>
@@ -60,6 +70,6 @@
     </div>
   </div>
 </main>
-<script type="module" src="assets/teacher.js?v=14"></script>
+<script type="module" src="assets/teacher.js?v=15"></script>
 </body>
 </html>

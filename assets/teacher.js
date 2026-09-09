@@ -1,4 +1,4 @@
-import { sb, clock } from './config.js?v=14';
+import { sb, clock } from './config.js?v=15';
 
 const el = id => document.getElementById(id);
 let teams = [], attempts = [], hints = [], completions = [], settings = null, stages = [];
@@ -25,6 +25,7 @@ async function boot() {
   live();
   setInterval(paintTeams, 1000);
   initTabs();
+  initChat();
 }
 
 el('login').addEventListener('submit', async e => {
@@ -68,6 +69,7 @@ async function refresh() {
   teams = t.data || []; attempts = a.data || []; hints = h.data || [];
   completions = c.data || []; settings = s.data;
   paintTeams(); paintHints(); paintCompletions(); paintControls(); paintLog();
+  paintChatTeamPicker();
 }
 
 function paintControls() {
@@ -421,7 +423,48 @@ function live() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'hints' }, refresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'completions' }, refresh)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'events' }, paintLog)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+      if (el('chat-team-pick').value) loadChatThread(el('chat-team-pick').value);
+    })
     .subscribe();
+}
+
+// ---------------------------------------------------------------------------
+// Chat with teams
+// ---------------------------------------------------------------------------
+function paintChatTeamPicker() {
+  const pick = el('chat-team-pick');
+  const current = pick.value;
+  pick.innerHTML = teams.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
+  if (current && teams.some(t => t.id === current)) pick.value = current;
+}
+
+function initChat() {
+  el('chat-team-pick').addEventListener('change', () => loadChatThread(el('chat-team-pick').value));
+  el('chat-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const teamId = el('chat-team-pick').value;
+    const input = el('chat-input');
+    const body = input.value.trim();
+    if (!body || !teamId) return;
+    input.value = '';
+    await sb.from('messages').insert({ team_id: teamId, sender: 'teacher', body });
+    loadChatThread(teamId);
+  });
+  if (el('chat-team-pick').value) loadChatThread(el('chat-team-pick').value);
+}
+
+async function loadChatThread(teamId) {
+  if (!teamId) return;
+  const { data } = await sb.from('messages').select('*')
+    .eq('team_id', teamId).order('created_at', { ascending: true }).limit(200);
+  const log = el('chat-log');
+  log.innerHTML = (data || []).map(m => `
+    <div class="chat-msg ${m.sender}">
+      ${esc(m.body)}
+      <time>${new Date(m.created_at).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}</time>
+    </div>`).join('');
+  log.scrollTop = log.scrollHeight;
 }
 
 boot();

@@ -1,5 +1,5 @@
-import { sb, roman, clock } from './config.js?v=14';
-import { renderGrid } from './grid.js?v=14';
+import { sb, roman, clock } from './config.js?v=15';
+import { renderGrid } from './grid.js?v=15';
 
 const stageEl = document.getElementById('stage');
 const nameEl  = document.getElementById('teamname');
@@ -257,3 +257,51 @@ sb.channel('realtime:public')
   .subscribe();
 
 load();
+
+// ---------------------------------------------------------------------------
+// Chat with the teacher
+// ---------------------------------------------------------------------------
+let myTeamId = null;
+let chatOpen = false;
+
+async function initChat() {
+  const { data: t } = await sb.from('teams').select('id').single();
+  if (!t) return;
+  myTeamId = t.id;
+
+  document.getElementById('chat-toggle').addEventListener('click', () => {
+    chatOpen = !chatOpen;
+    document.getElementById('chat-panel').hidden = !chatOpen;
+    if (chatOpen) loadChat();
+  });
+
+  document.getElementById('chat-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const input = document.getElementById('chat-input');
+    const body = input.value.trim();
+    if (!body) return;
+    input.value = '';
+    await sb.from('messages').insert({ team_id: myTeamId, sender: 'team', body });
+    loadChat();
+  });
+
+  sb.channel('realtime:messages')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+      if (chatOpen) loadChat();
+    })
+    .subscribe();
+}
+
+async function loadChat() {
+  const { data } = await sb.from('messages').select('*')
+    .eq('team_id', myTeamId).order('created_at', { ascending: true }).limit(200);
+  const log = document.getElementById('chat-log');
+  log.innerHTML = (data || []).map(m => `
+    <div class="chat-msg ${m.sender}">
+      ${escHtml(m.body)}
+      <time>${new Date(m.created_at).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}</time>
+    </div>`).join('');
+  log.scrollTop = log.scrollHeight;
+}
+
+initChat();

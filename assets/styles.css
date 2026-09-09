@@ -72,6 +72,17 @@ p{margin:0 0 1rem}
 .teacher-grid figure{margin:0;flex:1 1 0;min-width:0}
 .teacher-grid img{width:100%;border-radius:.3rem;border:1px solid var(--edge);display:block}
 
+.chat{max-width:38rem;margin:0 auto 3rem;padding:0 1.5rem}
+.chat #chat-toggle{width:100%}
+.chat #chat-panel{border:1px solid var(--edge);background:var(--panel);margin-top:.75rem;padding:1rem}
+.chat-log{max-height:14rem;overflow-y:auto;display:flex;flex-direction:column;gap:.5rem;margin-bottom:.75rem}
+.chat-msg{padding:.5rem .75rem;border-radius:.4rem;max-width:80%;font-size:.92rem}
+.chat-msg.team{align-self:flex-end;background:var(--brass);color:#F7F6F2}
+.chat-msg.teacher{align-self:flex-start;background:#FBFAF7;border:1px solid var(--edge)}
+.chat-msg time{display:block;font-size:.7rem;opacity:.7;margin-top:.2rem}
+#chat-form{margin-top:0}
+#chat-form input{flex:1}
+
 /* Answer */
 form{margin-top:2rem}
 label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:.4rem;
