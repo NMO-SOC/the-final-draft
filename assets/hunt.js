@@ -1,5 +1,5 @@
-import { sb, roman, clock } from './config.js?v=11';
-import { renderGrid } from './grid.js?v=11';
+import { sb, roman, clock } from './config.js?v=12';
+import { renderGrid } from './grid.js?v=12';
 
 const stageEl = document.getElementById('stage');
 const nameEl  = document.getElementById('teamname');

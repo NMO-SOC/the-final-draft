@@ -127,6 +127,16 @@ table.teams tr.flagged td{background:rgba(140,47,42,.10)}
 .tab{background:transparent;color:var(--muted);border:1px solid var(--edge);padding:.5rem 1.25rem;font-size:.9rem}
 .tab.active{background:var(--brass);color:#F7F6F2;border-color:var(--brass)}
 .editor-section{max-width:52rem}
+.editor-cols{display:grid;grid-template-columns:1fr;gap:2rem}
+@media(min-width:72rem){.editor-cols{grid-template-columns:1fr 1fr}}
+.editor-form{min-width:0}
+.editor-preview{min-width:0}
+.preview-frame{
+  border:1px solid var(--edge);background:#FBFAF7;
+  padding:2rem 1.75rem;border-radius:2px;
+  font-family:var(--serif);font-size:1rem;
+  max-height:70vh;overflow-y:auto;
+}
 
 @media(prefers-reduced-motion:no-preference){
   .reveal{animation:rise .5s ease-out}

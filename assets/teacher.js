@@ -1,4 +1,4 @@
-import { sb, clock } from './config.js?v=9';
+import { sb, clock } from './config.js?v=12';
 
 const el = id => document.getElementById(id);
 let teams = [], attempts = [], hints = [], settings = null, stages = [];
@@ -187,26 +187,43 @@ async function renderStageEditor(num) {
 
   const ed = el('stage-editor');
   ed.innerHTML = `
-    <div class="editor-section">
-      <h2>Stage ${stage.number} — content</h2>
+    <div class="editor-cols">
+      <div class="editor-form">
+        <h2>Stage ${stage.number} — content</h2>
 
-      <label>Title</label>
-      <input type="text" id="ed-title" value="${esc(stage.title)}">
+        <label>Title</label>
+        <input type="text" id="ed-title" value="${esc(stage.title)}">
 
-      <label style="margin-top:1rem">Subtitle <span class="aside">(optional)</span></label>
-      <input type="text" id="ed-subtitle" value="${esc(stage.subtitle || '')}">
+        <label style="margin-top:1rem">Subtitle <span class="aside">(optional)</span></label>
+        <input type="text" id="ed-subtitle" value="${esc(stage.subtitle || '')}">
 
-      <label style="margin-top:1rem">Body HTML</label>
-      <textarea id="ed-body" rows="8" style="width:100%;font-family:var(--mono);
-        font-size:.85rem;background:#FBFAF7;border:1px solid var(--edge);
-        padding:.75rem;color:var(--ink)">${esc(stage.body_html)}</textarea>
+        <label style="margin-top:1rem">Body HTML</label>
+        <textarea id="ed-body" rows="12" style="width:100%;font-family:var(--mono);
+          font-size:.82rem;background:#FBFAF7;border:1px solid var(--edge);
+          padding:.75rem;color:var(--ink);resize:vertical">${esc(stage.body_html)}</textarea>
 
-      <label style="margin-top:1rem">Minimum seconds on stage</label>
-      <input type="number" id="ed-floor" value="${stage.min_seconds}" style="width:8rem">
+        <label style="margin-top:1rem">Minimum seconds on stage</label>
+        <input type="number" id="ed-floor" value="${stage.min_seconds}" style="width:8rem">
 
-      <div class="row" style="margin-top:1.25rem">
-        <button id="ed-save-stage">Save stage text</button>
-        <span id="ed-stage-msg" class="aside"></span>
+        <div class="row" style="margin-top:1.25rem">
+          <button id="ed-save-stage">Save stage text</button>
+          <span id="ed-stage-msg" class="aside"></span>
+        </div>
+      </div>
+
+      <div class="editor-preview">
+        <p class="aside" style="margin-bottom:.75rem;font-size:.75rem;
+           text-transform:uppercase;letter-spacing:.1em">Live preview</p>
+        <div class="preview-frame">
+          <div class="stagehead" style="text-align:center;margin-bottom:1.5rem">
+            <p class="numeral" id="prev-numeral" style="margin:0 auto 0.5rem"></p>
+            <span class="of" id="prev-of"></span>
+            <h2 id="prev-title" style="margin-top:.5rem"></h2>
+            <p class="aside" id="prev-subtitle"></p>
+            <hr class="rule">
+          </div>
+          <div class="body" id="prev-body"></div>
+        </div>
       </div>
     </div>
 
@@ -245,6 +262,22 @@ async function renderStageEditor(num) {
         <span id="ed-ans-msg" class="aside"></span>
       </div>
     </div>`;
+
+  // Live preview
+  const roman = n => ['','I','II','III','IV','V','VI','VII','VIII','IX','X'][n] || String(n);
+  const totalStages = stages.length;
+  function updatePreview() {
+    el('prev-numeral').textContent = roman(stage.number);
+    el('prev-of').textContent = `Stage ${stage.number} of ${totalStages}`;
+    el('prev-title').textContent = el('ed-title').value;
+    const sub = el('ed-subtitle').value.trim();
+    el('prev-subtitle').textContent = sub;
+    el('prev-subtitle').hidden = !sub;
+    el('prev-body').innerHTML = el('ed-body').value;
+  }
+  ['ed-title','ed-subtitle','ed-body'].forEach(id =>
+    el(id).addEventListener('input', updatePreview));
+  updatePreview();
 
   // Wire save stage
   el('ed-save-stage').onclick = async () => {
