@@ -123,6 +123,12 @@ input[type=text],input[type=password],input[type=datetime-local],input[type=numb
   width:100%;background:var(--card);border:1px solid var(--edge);color:var(--ink);
   font-family:var(--mono);font-size:1rem;padding:.85rem 1rem;border-radius:var(--radius);
 }
+/* Without this a bare <select> falls back to the native white control,
+   which is glaring against the dark palette. */
+select{
+  background:var(--card);border:1px solid var(--edge);color:var(--ink);
+  font-family:var(--serif);font-size:.95rem;padding:.5rem;border-radius:var(--radius);
+}
 input:focus-visible,button:focus-visible,select:focus-visible{
   outline:2px solid var(--brass);outline-offset:2px}
 button{
