@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>The Last Draft — admin</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/styles.css?v=19">
+</head>
+<body>
+<main>
+  <div class="masthead">
+    <h1>Admin override</h1>
+    <p class="sub">Restricted &mdash; staff only</p>
+  </div>
+
+  <p>This panel bypasses stage locks and cooldowns directly. Enter the
+     override key to unlock every stage for your team immediately.</p>
+
+  <form id="login">
+    <label for="key">Override key</label>
+    <input id="key" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" required>
+    <div class="row"><button type="submit">Unlock everything</button></div>
+  </form>
+
+  <p class="aside" style="margin-top:3rem">If you found this page by guessing the
+     URL, well done. That is the only prize on offer.</p>
+</main>
+
+<script>
+document.getElementById('login').addEventListener('submit', e => {
+  e.preventDefault();
+  location.href = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+});
+</script>
+</body>
+</html>
