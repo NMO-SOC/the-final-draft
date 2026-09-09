@@ -131,7 +131,7 @@ function renderCompletionForm(d) {
     <form id="completion">
       <label for="comp">Your ending</label>
       <textarea id="comp" rows="3" style="width:100%;font-family:var(--serif);font-size:1rem;
-        padding:.6rem;border:1px solid var(--edge);background:#FBFAF7;color:var(--ink);
+        padding:.6rem;border:1px solid var(--edge);background:var(--card);color:var(--ink);
         resize:vertical">${status === 'rejected' ? '' : ''}</textarea>
       <div class="row">
         <button type="submit" id="go">Send to your teacher</button>
