@@ -264,16 +264,24 @@ load();
 let myTeamId = null;
 let chatOpen = false;
 let unread = 0;
+let flashTimer = null;
+let flashOn = false;
 const baseTitle = document.title;
 
 function clearUnread() {
   unread = 0;
+  clearInterval(flashTimer);
+  flashTimer = null;
   document.title = baseTitle;
 }
 
 function markUnread() {
   unread++;
-  document.title = `(${unread}) ${baseTitle}`;
+  if (flashTimer) return; // already flashing
+  flashTimer = setInterval(() => {
+    flashOn = !flashOn;
+    document.title = flashOn ? `New message${unread > 1 ? ` (${unread})` : ''}` : baseTitle;
+  }, 1000);
 }
 
 document.addEventListener('visibilitychange', () => {
