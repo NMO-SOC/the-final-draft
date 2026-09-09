@@ -1,5 +1,5 @@
-import { sb, roman, clock } from './config.js?v=8';
-import { renderGrid } from './grid.js?v=8';
+import { sb, roman, clock } from './config.js?v=9';
+import { renderGrid } from './grid.js?v=9';
 
 const stageEl = document.getElementById('stage');
 const nameEl  = document.getElementById('teamname');
@@ -37,7 +37,16 @@ function blocked(d) {
     locked:    `Your team is locked. ${d.reason || 'Speak to your teacher.'}`,
     no_team:   'This account is not attached to a team. Tell your teacher.'
   };
-  stageEl.innerHTML = `<div class="notice bad">${words[d.error] || 'Unavailable.'}</div>`;
+  stageEl.innerHTML = `<div class="notice bad">${words[d.error] || 'Unavailable.'}</div>
+    ${ d.error === 'no_team'
+      ? `<p class="aside" style="text-align:center;margin-top:1.5rem">
+           <a href="#" id="signout">Sign out and return to login</a></p>`
+      : '' }`;
+  if (d.error === 'no_team') {
+    document.getElementById('signout').addEventListener('click', async e => {
+      e.preventDefault(); await sb.auth.signOut(); location.href = 'index.html';
+    });
+  }
   setTimeout(load, 10000);
 }
 
