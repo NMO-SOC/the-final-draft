@@ -254,15 +254,32 @@ async function askHint() {
 
 function fail(t) { stageEl.innerHTML = `<div class="notice bad">${t}</div>`; }
 
+// ---------------------------------------------------------------------------
+// Standings. Progress only — the server strips flags and penalties out.
+// ---------------------------------------------------------------------------
+async function loadBoard() {
+  const box = document.getElementById('board');
+  const { data, error } = await sb.rpc('get_leaderboard');
+  if (error || !data || data.error) { box.hidden = true; return; }
+
+  box.hidden = false;
+  document.getElementById('board-list').innerHTML = data.teams.map((t, i) => `
+    <div class="board-row${state && t.name === state.team ? ' you' : ''}">
+      <span class="board-pos">${i + 1}</span>
+      <span class="board-name">${escHtml(t.name)}</span>
+      <span class="board-stage">${t.finished_at ? 'Finished' : 'Stage ' + t.stage}</span>
+    </div>`).join('');
+}
+
 // Live: hints arriving, locks, teacher moving your stage
 sb.channel('realtime:public')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => load(true))
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => { load(true); loadBoard(); })
   .on('postgres_changes', { event: '*', schema: 'public', table: 'hints' }, () => load(true))
   .on('postgres_changes', { event: '*', schema: 'public', table: 'completions' }, () => load(true))
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => load(true))
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => { load(true); loadBoard(); })
   .subscribe();
 
-load();
+load().then(loadBoard);
 
 // ---------------------------------------------------------------------------
 // Chat with the teacher

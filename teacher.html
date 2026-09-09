@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/styles.css?v=19">
+<link rel="stylesheet" href="assets/styles.css?v=20">
 </head>
 <body>
 <main class="wide">
@@ -35,6 +35,16 @@
 
     <div id="tab-dashboard">
       <div class="row" id="controls"></div>
+      <div id="hunt-settings"></div>
+
+      <form id="broadcast-form" class="row" style="margin-top:1.5rem">
+        <label for="broadcast-input" style="margin:0;align-self:center">Announce to all</label>
+        <input id="broadcast-input" type="text" autocomplete="off"
+               placeholder="Goes to every team at once&hellip;" style="flex:1;min-width:14rem">
+        <button type="submit">Send to all</button>
+        <span id="broadcast-msg" class="aside"></span>
+      </form>
+
       <div class="cols">
         <div>
           <h2>Teams</h2>
@@ -76,6 +86,6 @@
     </div>
   </div>
 </main>
-<script type="module" src="assets/teacher.js?v=17"></script>
+<script type="module" src="assets/teacher.js?v=18"></script>
 </body>
 </html>

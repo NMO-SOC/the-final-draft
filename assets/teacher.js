@@ -1,5 +1,5 @@
 import { sb, clock } from './config.js?v=15';
-import { showPrompt } from './modal.js?v=1';
+import { showConfirm, showPrompt } from './modal.js?v=1';
 
 const el = id => document.getElementById(id);
 let teams = [], attempts = [], hints = [], completions = [], settings = null, stages = [];
@@ -52,6 +52,7 @@ async function boot() {
   setInterval(tickTimers, 1000);
   initTabs();
   initChat();
+  initBroadcast();
 }
 
 el('login').addEventListener('submit', async e => {
@@ -104,7 +105,92 @@ async function refresh() {
   pendingCompletionCount = nowPendingCompletions;
 
   paintTeams(); paintHints(); paintCompletions(); paintControls(); paintLog();
-  paintChatTeamPicker();
+  paintChatTeamPicker(); paintSettings();
+}
+
+// ---------------------------------------------------------------------------
+// Hunt window + leaderboard toggle
+// ---------------------------------------------------------------------------
+// <input type="datetime-local"> speaks local wall-clock with no zone, so both
+// directions have to go through Date rather than slicing the ISO string.
+function toLocalInput(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function paintSettings() {
+  const has = settings.opens_at || settings.closes_at;
+  el('hunt-settings').innerHTML = `
+    <div class="row" style="align-items:flex-end;gap:1rem;margin-top:1.5rem">
+      <div>
+        <label for="win-open">Opens</label>
+        <input type="datetime-local" id="win-open" value="${toLocalInput(settings.opens_at)}">
+      </div>
+      <div>
+        <label for="win-close">Closes</label>
+        <input type="datetime-local" id="win-close" value="${toLocalInput(settings.closes_at)}">
+      </div>
+      <button id="win-save">Save window</button>
+      <button id="board-toggle" class="quiet">
+        ${settings.leaderboard_on ? 'Hide standings' : 'Show standings'}</button>
+      <span id="win-msg" class="aside"></span>
+    </div>
+    <p class="aside">${has
+      ? 'Outside this window the hunt is unreachable. Checked in the database, not the browser.'
+      : 'No window set: the hunt is reachable whenever it is not frozen.'}</p>`;
+
+  el('win-save').onclick = async () => {
+    const o = el('win-open').value, c = el('win-close').value;
+    const { error } = await sb.from('settings').update({
+      opens_at:  o ? new Date(o).toISOString() : null,
+      closes_at: c ? new Date(c).toISOString() : null
+    }).eq('id', 1);
+    if (error) { el('win-msg').textContent = 'Error: ' + error.message; return; }
+    settings.opens_at  = o ? new Date(o).toISOString() : null;
+    settings.closes_at = c ? new Date(c).toISOString() : null;
+    paintSettings();
+    el('win-msg').textContent = 'Saved.';
+  };
+
+  el('board-toggle').onclick = async () => {
+    const next = !settings.leaderboard_on;
+    const { error } = await sb.from('settings').update({ leaderboard_on: next }).eq('id', 1);
+    if (error) { el('win-msg').textContent = 'Error: ' + error.message; return; }
+    settings.leaderboard_on = next;
+    paintSettings();
+    el('win-msg').textContent = next ? 'Standings shown to teams.' : 'Standings hidden.';
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Broadcast: one message row per team, so it lands in each team's own thread
+// and trips their unread flash like any other message.
+// ---------------------------------------------------------------------------
+function initBroadcast() {
+  el('broadcast-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const input = el('broadcast-input');
+    const body = input.value.trim();
+    if (!body) return;
+    if (!teams.length) { el('broadcast-msg').textContent = 'No teams to send to.'; return; }
+
+    const ok = await showConfirm({
+      title: 'Send to every team',
+      body: `This goes to all ${teams.length} team${teams.length === 1 ? '' : 's'} at once.`,
+      confirmLabel: 'Send to all'
+    });
+    if (!ok) return;
+
+    input.value = '';
+    const { error } = await sb.from('messages').insert(
+      teams.map(t => ({ team_id: t.id, sender: 'teacher', body: `To all teams — ${body}` })));
+    el('broadcast-msg').textContent = error
+      ? 'Error: ' + error.message
+      : `Sent to ${teams.length} team${teams.length === 1 ? '' : 's'}.`;
+    setTimeout(() => { el('broadcast-msg').textContent = ''; }, 4000);
+  });
 }
 
 function paintControls() {

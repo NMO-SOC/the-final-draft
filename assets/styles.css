@@ -89,6 +89,19 @@ p{margin:0 0 1rem}
 .teacher-grid img{width:100%;border-radius:var(--radius);border:1px solid var(--edge);display:block}
 @media(max-width:30rem){.teacher-grid{flex-wrap:wrap}.teacher-grid figure{flex:1 1 45%}}
 
+/* Standings */
+.board{max-width:38rem;margin:3rem auto 0;padding:0 1.5rem}
+.board h2{font-size:1rem;font-variant:small-caps;letter-spacing:.12em;color:var(--muted);
+          font-weight:600;margin:0 0 .75rem;border-bottom:1px solid var(--edge);padding-bottom:.4rem}
+.board-row{display:flex;gap:.75rem;align-items:baseline;padding:.4rem 0;
+           border-bottom:1px solid var(--edge);font-size:.95rem}
+.board-row:last-child{border-bottom:0}
+.board-pos{font-family:var(--mono);font-size:.75rem;color:var(--muted);min-width:1.5rem}
+.board-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.board-stage{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+.board-row.you .board-name{font-weight:600;color:var(--brass)}
+.board-row.you .board-pos{color:var(--brass)}
+
 .chat{max-width:38rem;margin:0 auto 3rem;padding:0 1.5rem}
 .chat #chat-toggle{width:100%}
 .chat #chat-panel{border:1px solid var(--edge);background:var(--panel);margin-top:.75rem;padding:1rem}
@@ -105,7 +118,7 @@ p{margin:0 0 1rem}
 form{margin-top:2rem}
 label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:.4rem;
       font-variant:small-caps;letter-spacing:.12em}
-input[type=text],input[type=password]{
+input[type=text],input[type=password],input[type=datetime-local],input[type=number]{
   width:100%;background:var(--card);border:1px solid var(--edge);color:var(--ink);
   font-family:var(--mono);font-size:1rem;padding:.85rem 1rem;border-radius:var(--radius);
 }
