@@ -16,16 +16,16 @@
 
 @media(prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --ground:#1B1912;
-    --panel:#262319;
-    --edge:#443F2E;
-    --ink:#EDE8DC;
-    --muted:#A69C87;
-    --brass:#D7A75C;
-    --brass-ink:#1B1912;
-    --alarm:#D9756B;
+    --ground:#15161A;
+    --panel:#1E1F24;
+    --edge:#34353C;
+    --ink:#E7E5DF;
+    --muted:#918F8A;
+    --brass:#D9A85E;
+    --brass-ink:#15161A;
+    --alarm:#E08277;
     --ok:#8FB584;
-    --card:#221F16;
+    --card:#1A1B20;
   }
 }
 

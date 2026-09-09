@@ -265,15 +265,22 @@ let myTeamId = null;
 let chatOpen = false;
 
 async function initChat() {
-  const { data: t } = await sb.from('teams').select('id').single();
-  if (!t) return;
-  myTeamId = t.id;
-
+  // Wire the toggle first and unconditionally: it only flips visibility,
+  // so a failure below must not leave the button silently dead.
   document.getElementById('chat-toggle').addEventListener('click', () => {
     chatOpen = !chatOpen;
     document.getElementById('chat-panel').hidden = !chatOpen;
     if (chatOpen) loadChat();
   });
+
+  const { data: t, error } = await sb.from('teams').select('id').single();
+  if (error || !t) {
+    console.error('chat: could not resolve team id', error);
+    document.getElementById('chat-panel').innerHTML =
+      '<div class="notice bad">Messaging is unavailable right now. Try reloading the page.</div>';
+    return;
+  }
+  myTeamId = t.id;
 
   document.getElementById('chat-form').addEventListener('submit', async e => {
     e.preventDefault();
@@ -281,7 +288,8 @@ async function initChat() {
     const body = input.value.trim();
     if (!body) return;
     input.value = '';
-    await sb.from('messages').insert({ team_id: myTeamId, sender: 'team', body });
+    const { error } = await sb.from('messages').insert({ team_id: myTeamId, sender: 'team', body });
+    if (error) console.error('chat: send failed', error);
     loadChat();
   });
 
@@ -298,6 +306,7 @@ async function loadChat() {
   const log = document.getElementById('chat-log');
   log.innerHTML = (data || []).map(m => `
     <div class="chat-msg ${m.sender}">
+      <span class="who">${m.sender === 'team' ? 'You' : 'Teacher'}</span>
       ${escHtml(m.body)}
       <time>${new Date(m.created_at).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}</time>
     </div>`).join('');
