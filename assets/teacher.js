@@ -1,4 +1,4 @@
-import { sb, clock } from './config.js?v=12';
+import { sb, clock } from './config.js?v=13';
 
 const el = id => document.getElementById(id);
 let teams = [], attempts = [], hints = [], settings = null, stages = [];
@@ -205,6 +205,12 @@ async function renderStageEditor(num) {
         <label style="margin-top:1rem">Minimum seconds on stage</label>
         <input type="number" id="ed-floor" value="${stage.min_seconds}" style="width:8rem">
 
+        <label style="margin-top:1rem">Stage type</label>
+        <select id="ed-kind" style="width:auto;background:#FBFAF7;border:1px solid var(--edge);padding:.5rem;color:var(--ink);font-family:var(--serif)">
+          <option value="text" ${stage.kind==='text'?'selected':''}>Text (standard)</option>
+          <option value="grid" ${stage.kind==='grid'?'selected':''}>Grid (logic puzzle)</option>
+        </select>
+
         <div class="row" style="margin-top:1.25rem">
           <button id="ed-save-stage">Save stage text</button>
           <span id="ed-stage-msg" class="aside"></span>
@@ -287,7 +293,9 @@ async function renderStageEditor(num) {
       title:       el('ed-title').value.trim(),
       subtitle:    el('ed-subtitle').value.trim() || null,
       body_html:   el('ed-body').value,
-      min_seconds: Number(el('ed-floor').value)
+      min_seconds: Number(el('ed-floor').value),
+      kind:        el('ed-kind').value,
+      payload:     el('ed-kind').value === 'grid' ? stage.payload : null
     }).eq('number', num);
     msg.textContent = error ? 'Error: ' + error.message : 'Saved.';
     if (!error) {
