@@ -1,5 +1,5 @@
-import { sb, roman, clock } from './config.js?v=9';
-import { renderGrid } from './grid.js?v=9';
+import { sb, roman, clock } from './config.js?v=10';
+import { renderGrid } from './grid.js?v=10';
 
 const stageEl = document.getElementById('stage');
 const nameEl  = document.getElementById('teamname');
@@ -182,7 +182,6 @@ function fail(t) { stageEl.innerHTML = `<div class="notice bad">${t}</div>`; }
 sb.channel('realtime:public')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, load)
   .on('postgres_changes', { event: '*', schema: 'public', table: 'hints' }, load)
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, load)
   .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, load)
   .subscribe();
 
