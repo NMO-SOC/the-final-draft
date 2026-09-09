@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title>The Last Draft</title>
-<link rel="stylesheet" href="assets/styles.css?v=5">
+<link rel="stylesheet" href="assets/styles.css?v=8">
 </head>
 <body>
 <main>
@@ -32,11 +32,15 @@
 </main>
 
 <script type="module">
-import { sb, slugToEmail } from './assets/config.js?v=5';
+import { sb, slugToEmail } from './assets/config.js?v=8';
 const msg = document.getElementById('msg');
 
 const { data: { session } } = await sb.auth.getSession();
-if (session) location.href = 'hunt.html';
+if (session) {
+  // A previous session exists (e.g. teacher account). Sign out so the
+  // student can log in fresh.
+  await sb.auth.signOut();
+}
 
 document.getElementById('login').addEventListener('submit', async e => {
   e.preventDefault();
