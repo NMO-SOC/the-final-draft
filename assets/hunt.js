@@ -263,6 +263,22 @@ load();
 // ---------------------------------------------------------------------------
 let myTeamId = null;
 let chatOpen = false;
+let unread = 0;
+const baseTitle = document.title;
+
+function clearUnread() {
+  unread = 0;
+  document.title = baseTitle;
+}
+
+function markUnread() {
+  unread++;
+  document.title = `(${unread}) ${baseTitle}`;
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && chatOpen) clearUnread();
+});
 
 async function initChat() {
   // Wire the toggle first and unconditionally: it only flips visibility,
@@ -270,7 +286,7 @@ async function initChat() {
   document.getElementById('chat-toggle').addEventListener('click', () => {
     chatOpen = !chatOpen;
     document.getElementById('chat-panel').hidden = !chatOpen;
-    if (chatOpen) loadChat();
+    if (chatOpen) { loadChat(); if (!document.hidden) clearUnread(); }
   });
 
   const { data: t, error } = await sb.from('teams').select('id').single();
@@ -294,8 +310,9 @@ async function initChat() {
   });
 
   sb.channel('realtime:messages')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
       if (chatOpen) loadChat();
+      if (payload.new.sender === 'teacher' && (!chatOpen || document.hidden)) markUnread();
     })
     .subscribe();
 }
