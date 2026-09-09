@@ -1,5 +1,6 @@
 import { sb, roman, clock } from './config.js?v=15';
-import { renderGrid } from './grid.js?v=15';
+import { renderGrid } from './grid.js?v=16';
+import { showConfirm } from './modal.js?v=1';
 
 const stageEl = document.getElementById('stage');
 const nameEl  = document.getElementById('teamname');
@@ -241,7 +242,12 @@ async function askHint() {
   const tier = used + 1;
   if (tier > 3) return;
   const cost = Math.round((state.hint_costs_ms[tier - 1] || 0) / 60000);
-  if (!confirm(`Hint ${tier} costs ${cost} minutes. Ask for it?`)) return;
+  const ok = await showConfirm({
+    title: `Hint ${tier}`,
+    body: `This costs ${cost} minute${cost === 1 ? '' : 's'}, added to your time. Ask for it?`,
+    confirmLabel: 'Ask for it'
+  });
+  if (!ok) return;
   await sb.rpc('request_hint', { p_tier: tier });
   load();
 }

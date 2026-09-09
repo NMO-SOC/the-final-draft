@@ -1,8 +1,34 @@
 import { sb, clock } from './config.js?v=15';
+import { showPrompt } from './modal.js?v=1';
 
 const el = id => document.getElementById(id);
 let teams = [], attempts = [], hints = [], completions = [], settings = null, stages = [];
 let stagesByNumber = {};
+
+// ---------------------------------------------------------------------------
+// Tab-title flash when work arrives while this tab isn't focused
+// ---------------------------------------------------------------------------
+let openHintCount = 0, pendingCompletionCount = 0;
+let flashTimer = null, flashOn = false, flashCount = 0;
+const baseTitle = document.title;
+
+function clearFlash() {
+  flashCount = 0;
+  clearInterval(flashTimer);
+  flashTimer = null;
+  document.title = baseTitle;
+}
+
+function markFlash() {
+  flashCount++;
+  if (flashTimer) return;
+  flashTimer = setInterval(() => {
+    flashOn = !flashOn;
+    document.title = flashOn ? `New activity${flashCount > 1 ? ` (${flashCount})` : ''}` : baseTitle;
+  }, 1000);
+}
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden) clearFlash(); });
 
 // ---------------------------------------------------------------------------
 // Boot
@@ -23,7 +49,7 @@ async function boot() {
   stagesByNumber = Object.fromEntries((sAll || []).map(s => [s.number, s]));
   await refresh();
   live();
-  setInterval(paintTeams, 1000);
+  setInterval(tickTimers, 1000);
   initTabs();
   initChat();
 }
@@ -68,6 +94,15 @@ async function refresh() {
   ]);
   teams = t.data || []; attempts = a.data || []; hints = h.data || [];
   completions = c.data || []; settings = s.data;
+
+  const nowOpenHints = hints.filter(h => h.status === 'requested').length;
+  const nowPendingCompletions = completions.filter(c => c.status === 'pending').length;
+  if (document.hidden && (nowOpenHints > openHintCount || nowPendingCompletions > pendingCompletionCount)) {
+    markFlash();
+  }
+  openHintCount = nowOpenHints;
+  pendingCompletionCount = nowPendingCompletions;
+
   paintTeams(); paintHints(); paintCompletions(); paintControls(); paintLog();
   paintChatTeamPicker();
 }
@@ -93,10 +128,10 @@ function paintTeams() {
   el('teams').innerHTML = teams.map(t => {
     const flagged = t.flags > 0;
     const on = t.finished_at ? '&mdash;' : clock(Date.now() - new Date(t.stage_entered_at).getTime());
-    return `<tr class="${flagged ? 'flagged' : ''}">
+    return `<tr class="${flagged ? 'flagged' : ''}" data-team="${t.id}">
       <td>${t.name}${t.locked ? ' <span class="chip alert">locked</span>' : ''}</td>
       <td>${t.finished_at ? 'done' : t.current_stage}</td>
-      <td>${on}</td>
+      <td data-on-stage>${on}</td>
       <td>${wrongCount(t.id, t.current_stage)}</td>
       <td>${t.flags ? `<span class="chip alert">${t.flags}</span>` : '0'}</td>
       <td>${Math.round(t.penalty_ms / 60000)} min</td>
@@ -110,21 +145,37 @@ function paintTeams() {
   el('teams').querySelectorAll('button').forEach(b => b.onclick = () => act(b.dataset));
 }
 
+// Runs every second without rebuilding the table, so a teacher mid-click or
+// mid-scroll doesn't have the row yanked out from under them each tick.
+function tickTimers() {
+  teams.forEach(t => {
+    if (t.finished_at) return;
+    const cell = el('teams').querySelector(`tr[data-team="${t.id}"] [data-on-stage]`);
+    if (cell) cell.textContent = clock(Date.now() - new Date(t.stage_entered_at).getTime());
+  });
+}
+
 async function act(d) {
   if (d.act === 'lock') {
-    const reason = d.on === '1' ? prompt('Reason shown to the team:', 'Wait for your teacher.') : null;
-    if (d.on === '1' && reason === null) return;
+    let reason = null;
+    if (d.on === '1') {
+      reason = await showPrompt({
+        title: 'Lock this team', body: 'Reason shown to the team:',
+        defaultValue: 'Wait for your teacher.', confirmLabel: 'Lock'
+      });
+      if (reason === null) return;
+    }
     await sb.rpc('set_lock', { p_team: d.id, p_locked: d.on === '1', p_reason: reason });
   }
   if (d.act === 'pen') {
-    const mins = prompt('Penalty in minutes:', '5');
+    const mins = await showPrompt({ title: 'Apply a penalty', body: 'Minutes to add:', defaultValue: '5', confirmLabel: 'Next' });
     if (!mins) return;
-    const why = prompt('Reason (recorded):', '');
+    const why = await showPrompt({ title: 'Apply a penalty', body: 'Reason (recorded):', confirmLabel: 'Apply' });
     if (why === null) return;
     await sb.rpc('apply_penalty', { p_team: d.id, p_ms: Number(mins) * 60000, p_reason: why });
   }
   if (d.act === 'stage') {
-    const n = prompt('Move team to stage:');
+    const n = await showPrompt({ title: 'Move team', body: 'Move team to stage:', confirmLabel: 'Move' });
     if (!n) return;
     await sb.rpc('set_stage', { p_team: d.id, p_stage: Number(n) });
   }
@@ -177,7 +228,9 @@ function paintCompletions() {
     refresh();
   });
   el('completions').querySelectorAll('[data-reject]').forEach(b => b.onclick = async () => {
-    const reason = prompt('Reason (shown in the log, not to the team):', '');
+    const reason = await showPrompt({
+      title: 'Send back', body: 'Reason (shown in the log, not to the team):', confirmLabel: 'Send back'
+    });
     if (reason === null) return;
     await sb.rpc('reject_completion', { p_id: Number(b.dataset.reject), p_reason: reason || null });
     refresh();
@@ -235,14 +288,14 @@ async function renderStageEditor(num) {
 
         <label style="margin-top:1rem">Body HTML</label>
         <textarea id="ed-body" rows="12" style="width:100%;font-family:var(--mono);
-          font-size:.82rem;background:#FBFAF7;border:1px solid var(--edge);
+          font-size:.82rem;background:var(--card);border:1px solid var(--edge);
           padding:.75rem;color:var(--ink);resize:vertical">${esc(stage.body_html)}</textarea>
 
         <label style="margin-top:1rem">Minimum seconds on stage</label>
         <input type="number" id="ed-floor" value="${stage.min_seconds}" style="width:8rem">
 
         <label style="margin-top:1rem">Stage type</label>
-        <select id="ed-kind" style="width:auto;background:#FBFAF7;border:1px solid var(--edge);padding:.5rem;color:var(--ink);font-family:var(--serif)">
+        <select id="ed-kind" style="width:auto;background:var(--card);border:1px solid var(--edge);padding:.5rem;color:var(--ink);font-family:var(--serif)">
           <option value="text" ${stage.kind==='text'?'selected':''}>Text (standard)</option>
           <option value="grid" ${stage.kind==='grid'?'selected':''}>Grid (logic puzzle)</option>
           <option value="completion" ${stage.kind==='completion'?'selected':''}>Completion (teacher-reviewed writing)</option>
@@ -287,12 +340,12 @@ async function renderStageEditor(num) {
             <tr data-id="${a.id}">
               <td><input type="text" class="ans-val" value="${esc(a.normalised)}"
                    style="width:100%;font-family:var(--mono);font-size:.9rem;
-                   background:#FBFAF7;border:1px solid var(--edge);padding:.4rem"></td>
+                   background:var(--card);border:1px solid var(--edge);padding:.4rem"></td>
               <td style="text-align:center">
                 <input type="checkbox" class="ans-honey" ${a.is_honeypot ? 'checked' : ''}></td>
               <td><input type="text" class="ans-note" value="${esc(a.note || '')}"
                    placeholder="Why this honeypot?"
-                   style="width:100%;font-size:.85rem;background:#FBFAF7;
+                   style="width:100%;font-size:.85rem;background:var(--card);
                    border:1px solid var(--edge);padding:.4rem"></td>
               <td><button class="quiet ans-del" style="color:var(--alarm)">Remove</button></td>
             </tr>`).join('')}
@@ -353,10 +406,10 @@ async function renderStageEditor(num) {
     row.innerHTML = `
       <td><input type="text" class="ans-val" placeholder="Answer"
            style="width:100%;font-family:var(--mono);font-size:.9rem;
-           background:#FBFAF7;border:1px solid var(--edge);padding:.4rem"></td>
+           background:var(--card);border:1px solid var(--edge);padding:.4rem"></td>
       <td style="text-align:center"><input type="checkbox" class="ans-honey"></td>
       <td><input type="text" class="ans-note" placeholder="Why this honeypot?"
-           style="width:100%;font-size:.85rem;background:#FBFAF7;
+           style="width:100%;font-size:.85rem;background:var(--card);
            border:1px solid var(--edge);padding:.4rem"></td>
       <td><button class="quiet ans-del" style="color:var(--alarm)">Remove</button></td>`;
     tbody.appendChild(row);
@@ -423,7 +476,8 @@ function live() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'hints' }, refresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'completions' }, refresh)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'events' }, paintLog)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+      if (payload.new.sender === 'team' && document.hidden) markFlash();
       if (el('chat-team-pick').value) loadChatThread(el('chat-team-pick').value);
     })
     .subscribe();

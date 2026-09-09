@@ -28,7 +28,7 @@ export function renderGrid(host, payload) {
           </tr>`).join('')}
       </tbody>
     </table>
-    <p class="aside" id="clash"></p>`;
+    <div id="clash"></div>`;
 
   host.querySelectorAll('#clues li').forEach(li =>
     li.addEventListener('click', () => li.classList.toggle('used')));
@@ -44,8 +44,8 @@ export function renderGrid(host, payload) {
       if (seen[k]) clash = true;
       seen[k] = true;
     });
-    host.querySelector('#clash').textContent =
-      clash ? 'One value is placed twice. Each appears exactly once.' : '';
+    host.querySelector('#clash').innerHTML = clash
+      ? '<div class="notice bad">One value is placed twice. Each appears exactly once.</div>' : '';
   };
   selects.forEach(s => s.addEventListener('change', check));
 }
