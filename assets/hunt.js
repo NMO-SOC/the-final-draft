@@ -1,5 +1,5 @@
-import { sb, roman, clock } from './config.js?v=12';
-import { renderGrid } from './grid.js?v=12';
+import { sb, roman, clock } from './config.js?v=14';
+import { renderGrid } from './grid.js?v=14';
 
 const stageEl = document.getElementById('stage');
 const nameEl  = document.getElementById('teamname');
@@ -27,7 +27,8 @@ async function load(soft) {
     const same = data.stage === state.stage
       && data.error === state.error
       && !data.finished
-      && JSON.stringify(data.hints) === JSON.stringify(state.hints);
+      && JSON.stringify(data.hints) === JSON.stringify(state.hints)
+      && JSON.stringify(data.completion) === JSON.stringify(state.completion);
     if (same) { state = data; return; }
   }
 
@@ -81,6 +82,7 @@ function render() {
       <div class="body">${d.body_html}</div>
       <div id="puzzle"></div>
       <div id="hintbox"></div>
+      ${d.kind === 'completion' ? renderCompletionForm(d) : `
       <form id="answer">
         <label for="ans">Password</label>
         <input id="ans" type="text" autocomplete="off" autocapitalize="characters"
@@ -90,7 +92,7 @@ function render() {
           <button type="button" class="quiet" id="hint">Ask for a hint</button>
           <span id="cool" class="aside"></span>
         </div>
-      </form>
+      </form>`}
       <div id="result"></div>
       <div class="status">
         <span id="elapsed">&mdash;</span>
@@ -102,14 +104,71 @@ function render() {
   if (d.kind === 'grid' && d.payload) renderGrid(document.getElementById('puzzle'), d.payload);
   drawHints();
   startClock();
-  if (d.cooldown > 0) cooldown(d.cooldown);
 
-  document.getElementById('ans').addEventListener('paste', () => { pasted = true; });
-  document.getElementById('answer').addEventListener('submit', submit);
-  document.getElementById('hint').addEventListener('click', askHint);
+  if (d.kind === 'completion') {
+    wireCompletionForm(d);
+  } else {
+    if (d.cooldown > 0) cooldown(d.cooldown);
+    document.getElementById('ans').addEventListener('paste', () => { pasted = true; });
+    document.getElementById('answer').addEventListener('submit', submit);
+    document.getElementById('hint').addEventListener('click', askHint);
+  }
   document.getElementById('out').addEventListener('click', async e => {
     e.preventDefault(); await sb.auth.signOut(); location.href = 'index.html';
   });
+}
+
+function renderCompletionForm(d) {
+  const status = d.completion?.status;
+  if (status === 'pending') {
+    return `<div class="notice">Sent to your teacher. Waiting for the go-ahead.</div>
+      <p class="aside" style="margin-top:.5rem">What you sent:</p>
+      <p style="color:var(--alarm)">${escHtml(d.completion.text)}</p>`;
+  }
+  const rejectedNote = status === 'rejected'
+    ? `<div class="notice bad">Not yet. Read it again and try another ending.</div>` : '';
+  return `${rejectedNote}
+    <form id="completion">
+      <label for="comp">Your ending</label>
+      <textarea id="comp" rows="3" style="width:100%;font-family:var(--serif);font-size:1rem;
+        padding:.6rem;border:1px solid var(--edge);background:#FBFAF7;color:var(--ink);
+        resize:vertical">${status === 'rejected' ? '' : ''}</textarea>
+      <div class="row">
+        <button type="submit" id="go">Send to your teacher</button>
+        <button type="button" class="quiet" id="hint">Ask for a hint</button>
+      </div>
+    </form>`;
+}
+
+function wireCompletionForm(d) {
+  const status = d.completion?.status;
+  if (status === 'pending') return;
+  const form = document.getElementById('completion');
+  if (!form) return;
+  form.addEventListener('submit', submitCompletion);
+  document.getElementById('hint').addEventListener('click', askHint);
+}
+
+async function submitCompletion(e) {
+  e.preventDefault();
+  const input = document.getElementById('comp');
+  const text = input.value;
+  if (!text.trim()) return;
+  document.getElementById('go').disabled = true;
+
+  const { data, error } = await sb.rpc('submit_completion', { p_text: text });
+  const out = document.getElementById('result');
+  if (error || data.error) {
+    out.innerHTML = `<div class="notice bad">That did not reach the hunt. Try once more.</div>`;
+    document.getElementById('go').disabled = false;
+    return;
+  }
+  load();
+}
+
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function drawHints() {
@@ -193,6 +252,7 @@ function fail(t) { stageEl.innerHTML = `<div class="notice bad">${t}</div>`; }
 sb.channel('realtime:public')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => load(true))
   .on('postgres_changes', { event: '*', schema: 'public', table: 'hints' }, () => load(true))
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'completions' }, () => load(true))
   .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => load(true))
   .subscribe();
 

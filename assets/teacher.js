@@ -1,7 +1,8 @@
-import { sb, clock } from './config.js?v=13';
+import { sb, clock } from './config.js?v=14';
 
 const el = id => document.getElementById(id);
-let teams = [], attempts = [], hints = [], settings = null, stages = [];
+let teams = [], attempts = [], hints = [], completions = [], settings = null, stages = [];
+let stagesByNumber = {};
 
 // ---------------------------------------------------------------------------
 // Boot
@@ -18,6 +19,8 @@ async function boot() {
   }
   el('login').hidden = true;
   el('panel').hidden = false;
+  const { data: sAll } = await sb.from('stages').select('number, title, body_html').order('number');
+  stagesByNumber = Object.fromEntries((sAll || []).map(s => [s.number, s]));
   await refresh();
   live();
   setInterval(paintTeams, 1000);
@@ -55,14 +58,16 @@ function initTabs() {
 // Dashboard refresh
 // ---------------------------------------------------------------------------
 async function refresh() {
-  const [t, a, h, s] = await Promise.all([
+  const [t, a, h, c, s] = await Promise.all([
     sb.from('teams').select('*').order('current_stage', { ascending: false }),
     sb.from('attempts').select('*').order('created_at', { ascending: false }).limit(400),
     sb.from('hints').select('*').order('requested_at', { ascending: false }).limit(60),
+    sb.from('completions').select('*').order('created_at', { ascending: false }).limit(60),
     sb.from('settings').select('*').eq('id', 1).single()
   ]);
-  teams = t.data || []; attempts = a.data || []; hints = h.data || []; settings = s.data;
-  paintTeams(); paintHints(); paintControls(); paintLog();
+  teams = t.data || []; attempts = a.data || []; hints = h.data || [];
+  completions = c.data || []; settings = s.data;
+  paintTeams(); paintHints(); paintCompletions(); paintControls(); paintLog();
 }
 
 function paintControls() {
@@ -148,6 +153,35 @@ function paintHints() {
   });
 }
 
+function paintCompletions() {
+  const open = completions.filter(c => c.status === 'pending');
+  el('completions').innerHTML = open.length
+    ? open.map(c => {
+        const team = teams.find(t => t.id === c.team_id);
+        const stage = stagesByNumber[c.stage_number];
+        return `<div class="notice hint">
+          <strong>${team ? team.name : '?'}</strong> &mdash; stage ${c.stage_number}${stage ? ' &middot; ' + esc(stage.title) : ''}
+          <div style="color:var(--ink);margin-top:.5rem">${stage ? stage.body_html : ''}</div>
+          <p style="color:var(--alarm);margin:.5rem 0;font-weight:600">${esc(c.text)}</p>
+          <div class="row">
+            <button data-approve="${c.id}">Approve</button>
+            <button class="quiet" data-reject="${c.id}" style="color:var(--alarm)">Send back</button>
+          </div></div>`;
+      }).join('')
+    : '<p class="aside">No completions waiting.</p>';
+
+  el('completions').querySelectorAll('[data-approve]').forEach(b => b.onclick = async () => {
+    await sb.rpc('approve_completion', { p_id: Number(b.dataset.approve) });
+    refresh();
+  });
+  el('completions').querySelectorAll('[data-reject]').forEach(b => b.onclick = async () => {
+    const reason = prompt('Reason (shown in the log, not to the team):', '');
+    if (reason === null) return;
+    await sb.rpc('reject_completion', { p_id: Number(b.dataset.reject), p_reason: reason || null });
+    refresh();
+  });
+}
+
 async function paintLog() {
   const { data } = await sb.from('events').select('*')
     .order('created_at', { ascending: false }).limit(120);
@@ -209,6 +243,7 @@ async function renderStageEditor(num) {
         <select id="ed-kind" style="width:auto;background:#FBFAF7;border:1px solid var(--edge);padding:.5rem;color:var(--ink);font-family:var(--serif)">
           <option value="text" ${stage.kind==='text'?'selected':''}>Text (standard)</option>
           <option value="grid" ${stage.kind==='grid'?'selected':''}>Grid (logic puzzle)</option>
+          <option value="completion" ${stage.kind==='completion'?'selected':''}>Completion (teacher-reviewed writing)</option>
         </select>
 
         <div class="row" style="margin-top:1.25rem">
@@ -384,6 +419,7 @@ function live() {
   sb.channel('control')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, refresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'hints' }, refresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'completions' }, refresh)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'events' }, paintLog)
     .subscribe();
 }
