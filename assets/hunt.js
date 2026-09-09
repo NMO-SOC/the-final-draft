@@ -1,5 +1,5 @@
-import { sb, roman, clock } from './config.js?v=10';
-import { renderGrid } from './grid.js?v=10';
+import { sb, roman, clock } from './config.js?v=11';
+import { renderGrid } from './grid.js?v=11';
 
 const stageEl = document.getElementById('stage');
 const nameEl  = document.getElementById('teamname');
@@ -17,9 +17,20 @@ document.addEventListener('visibilitychange', () => {
 const { data: { session } } = await sb.auth.getSession();
 if (!session) location.href = 'index.html';
 
-async function load() {
+async function load(soft) {
   const { data, error } = await sb.rpc('get_stage');
   if (error) { fail('Something went wrong reaching the hunt. Tell your teacher.'); return; }
+
+  // Soft reload: only redraw if stage/lock/freeze state changed.
+  // This prevents wrong-answer messages being wiped by background team updates.
+  if (soft && state) {
+    const same = data.stage === state.stage
+      && data.error === state.error
+      && !data.finished
+      && JSON.stringify(data.hints) === JSON.stringify(state.hints);
+    if (same) { state = data; return; }
+  }
+
   state = data;
 
   if (data.error) return blocked(data);
@@ -180,9 +191,9 @@ function fail(t) { stageEl.innerHTML = `<div class="notice bad">${t}</div>`; }
 
 // Live: hints arriving, locks, teacher moving your stage
 sb.channel('realtime:public')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, load)
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'hints' }, load)
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, load)
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => load(true))
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'hints' }, () => load(true))
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => load(true))
   .subscribe();
 
 load();
