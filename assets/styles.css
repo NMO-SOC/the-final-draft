@@ -1,16 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
-
 :root{
   --ground:#F2F1EC;
   --panel:#E7E5DD;
   --edge:#C8C4B6;
   --ink:#1C222B;
   --muted:#67655D;
-  --brass:#1F3A5F;
+  --brass:#8A5A28;
+  --brass-ink:#F7F1E6;
   --alarm:#8C2F2A;
   --ok:#4A6B45;
-  --serif:'EB Garamond',Georgia,serif;
-  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --card:#FBFAF7;
+  --serif:'EB Garamond',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+  --radius:2px;
+}
+
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#1B1912;
+    --panel:#262319;
+    --edge:#443F2E;
+    --ink:#EDE8DC;
+    --muted:#A69C87;
+    --brass:#D7A75C;
+    --brass-ink:#1B1912;
+    --alarm:#D9756B;
+    --ok:#8FB584;
+    --card:#221F16;
+  }
 }
 
 *{box-sizing:border-box}
@@ -58,8 +74,8 @@ p{margin:0 0 1rem}
 .rule{border:0;border-top:1px solid var(--edge);width:5rem;margin:2rem auto}
 
 .body p{max-width:34rem}
-.body p:first-of-type::first-letter{font-size:1.9rem;line-height:1;float:left;
-  padding:.1rem .35rem 0 0;color:var(--brass);font-weight:500}
+.body p:first-of-type::first-letter{font-size:3.4rem;line-height:.78;float:left;
+  padding:.1rem .4rem 0 0;color:var(--brass);font-weight:500}
 .verse{margin:1.75rem 0 1.75rem 2rem;font-style:italic;color:var(--ink)}
 .gap{display:inline-block;min-width:4.5rem;border-bottom:1px solid var(--brass);
      text-align:center;font-family:var(--mono);font-size:.7rem;color:var(--brass);font-style:normal}
@@ -70,16 +86,18 @@ p{margin:0 0 1rem}
 
 .teacher-grid{display:flex;gap:.6rem;flex-wrap:nowrap;margin:1.5rem 0}
 .teacher-grid figure{margin:0;flex:1 1 0;min-width:0}
-.teacher-grid img{width:100%;border-radius:.3rem;border:1px solid var(--edge);display:block}
+.teacher-grid img{width:100%;border-radius:var(--radius);border:1px solid var(--edge);display:block}
+@media(max-width:30rem){.teacher-grid{flex-wrap:wrap}.teacher-grid figure{flex:1 1 45%}}
 
 .chat{max-width:38rem;margin:0 auto 3rem;padding:0 1.5rem}
 .chat #chat-toggle{width:100%}
 .chat #chat-panel{border:1px solid var(--edge);background:var(--panel);margin-top:.75rem;padding:1rem}
-.chat-log{max-height:14rem;overflow-y:auto;display:flex;flex-direction:column;gap:.5rem;margin-bottom:.75rem}
-.chat-msg{padding:.5rem .75rem;border-radius:.4rem;max-width:80%;font-size:.92rem}
-.chat-msg.team{align-self:flex-end;background:var(--brass);color:#F7F6F2}
-.chat-msg.teacher{align-self:flex-start;background:#FBFAF7;border:1px solid var(--edge)}
-.chat-msg time{display:block;font-size:.7rem;opacity:.7;margin-top:.2rem}
+.chat-log{max-height:14rem;overflow-y:auto;display:flex;flex-direction:column;gap:.75rem;margin-bottom:.75rem}
+.chat-msg{padding:.5rem 0 .5rem .75rem;border-left:2px solid var(--edge);font-size:.92rem}
+.chat-msg.team{border-left-color:var(--edge)}
+.chat-msg.teacher{border-left-color:var(--brass)}
+.chat-msg .who{display:block;font-size:.72rem;margin-bottom:.15rem}
+.chat-msg time{display:inline-block;font-size:.7rem;color:var(--muted);margin-left:.5rem;font-style:italic}
 #chat-form{margin-top:0}
 #chat-form input{flex:1}
 
@@ -88,16 +106,19 @@ form{margin-top:2rem}
 label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:.4rem;
       font-variant:small-caps;letter-spacing:.12em}
 input[type=text],input[type=password]{
-  width:100%;background:#FBFAF7;border:1px solid var(--edge);color:var(--ink);
-  font-family:var(--mono);font-size:1rem;padding:.85rem 1rem;border-radius:2px;
+  width:100%;background:var(--card);border:1px solid var(--edge);color:var(--ink);
+  font-family:var(--mono);font-size:1rem;padding:.85rem 1rem;border-radius:var(--radius);
 }
 input:focus-visible,button:focus-visible,select:focus-visible{
   outline:2px solid var(--brass);outline-offset:2px}
 button{
-  font-family:var(--serif);font-size:1rem;background:var(--brass);color:#F7F6F2;
-  border:0;padding:.75rem 1.5rem;border-radius:2px;cursor:pointer;font-weight:500;
+  font-family:var(--serif);font-size:1rem;background:var(--brass);color:var(--brass-ink);
+  border:0;padding:.75rem 1.5rem;border-radius:var(--radius);cursor:pointer;font-weight:500;
+  transition:filter .15s ease;
 }
+button:hover:not(:disabled){filter:brightness(1.12)}
 button.quiet{background:transparent;color:var(--ink);border:1px solid var(--edge)}
+button.quiet:hover:not(:disabled){background:var(--panel);filter:none}
 button:disabled{opacity:.4;cursor:not-allowed}
 .row{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;margin-top:1rem}
 
@@ -113,22 +134,27 @@ button:disabled{opacity:.4;cursor:not-allowed}
 /* Grid puzzle */
 .clues{list-style:none;padding:0;margin:1.5rem 0}
 .clues li{padding:.5rem .75rem;border-left:2px solid var(--edge);margin-bottom:.4rem;cursor:pointer;
-          font-size:.95rem;user-select:none}
+          font-size:.95rem;user-select:none;transition:background .12s ease,border-color .12s ease}
+.clues li:hover{background:var(--panel);border-color:var(--brass)}
 .clues li.used{color:var(--muted);text-decoration:line-through;border-color:var(--brass)}
+.clues li.used:hover{background:transparent}
 table.grid{width:100%;border-collapse:collapse;margin:1.5rem 0}
 table.grid th{font-size:.8rem;font-family:var(--mono);color:var(--muted);font-weight:400;
               text-align:left;padding:.4rem}
 table.grid td{padding:.3rem}
-table.grid select{width:100%;background:#FBFAF7;border:1px solid var(--edge);color:var(--ink);
-                  font-family:var(--serif);font-size:.95rem;padding:.5rem;border-radius:2px}
+table.grid select{width:100%;background:var(--card);border:1px solid var(--edge);color:var(--ink);
+                  font-family:var(--serif);font-size:.95rem;padding:.5rem;border-radius:var(--radius)}
 
 /* Teacher */
 .wide{max-width:78rem}
+.table-scroll{overflow-x:auto}
 table.teams{width:100%;border-collapse:collapse;font-size:.95rem}
 table.teams th{text-align:left;font-family:var(--mono);font-size:.75rem;color:var(--muted);
-               font-weight:400;border-bottom:1px solid var(--edge);padding:.5rem .6rem}
-table.teams td{border-bottom:1px solid var(--edge);padding:.6rem}
+               font-weight:400;border-bottom:1px solid var(--edge);padding:.5rem .6rem;white-space:nowrap}
+table.teams td{border-bottom:1px solid var(--edge);padding:.6rem;white-space:nowrap}
 table.teams tr.flagged td{background:rgba(140,47,42,.10)}
+table.teams tr:hover td{background:var(--panel)}
+table.teams tr.flagged:hover td{background:rgba(140,47,42,.16)}
 .chip{font-family:var(--mono);font-size:.7rem;padding:.15rem .45rem;border:1px solid var(--edge)}
 .chip.alert{border-color:var(--alarm);color:var(--alarm)}
 .log{font-family:var(--mono);font-size:.78rem;line-height:1.8;max-height:22rem;overflow:auto}
@@ -139,16 +165,18 @@ table.teams tr.flagged td{background:rgba(140,47,42,.10)}
 @media(min-width:60rem){.cols{grid-template-columns:2fr 1fr}}
 
 .tabs{display:flex;gap:.5rem;margin-bottom:2rem;border-bottom:1px solid var(--edge);padding-bottom:.75rem}
-.tab{background:transparent;color:var(--muted);border:1px solid var(--edge);padding:.5rem 1.25rem;font-size:.9rem}
-.tab.active{background:var(--brass);color:#F7F6F2;border-color:var(--brass)}
+.tab{background:transparent;color:var(--muted);border:1px solid var(--edge);padding:.5rem 1.25rem;font-size:.9rem;
+     cursor:pointer;transition:background .12s ease}
+.tab:hover:not(.active){background:var(--panel)}
+.tab.active{background:var(--brass);color:var(--brass-ink);border-color:var(--brass)}
 .editor-section{max-width:52rem}
 .editor-cols{display:grid;grid-template-columns:1fr;gap:2rem}
 @media(min-width:72rem){.editor-cols{grid-template-columns:1fr 1fr}}
 .editor-form{min-width:0}
 .editor-preview{min-width:0}
 .preview-frame{
-  border:1px solid var(--edge);background:#FBFAF7;
-  padding:2rem 1.75rem;border-radius:2px;
+  border:1px solid var(--edge);background:var(--card);
+  padding:2rem 1.75rem;border-radius:var(--radius);
   font-family:var(--serif);font-size:1rem;
   max-height:70vh;overflow-y:auto;
 }
