@@ -1,20 +1,27 @@
-import { sb, clock } from './config.js?v=8';
+import { sb, clock } from './config.js?v=9';
 
 const el = id => document.getElementById(id);
-let teams = [], attempts = [], hints = [], settings = null;
+let teams = [], attempts = [], hints = [], settings = null, stages = [];
 
+// ---------------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------------
 async function boot() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return;
   const { data: t, error: te } = await sb.from('teachers').select('auth_uid').maybeSingle();
   if (te) console.error('teacher lookup error', te);
-  if (!t) { el('loginmsg').innerHTML =
-    `<div class="notice bad">Signed in as ${session.user.email}, but the teacher check returned nothing.${te ? ' Error: ' + te.message : ''}</div>`; return; }
+  if (!t) {
+    el('loginmsg').innerHTML =
+      `<div class="notice bad">Signed in as ${session.user.email}, but the teacher check returned nothing.${te ? ' Error: ' + te.message : ''}</div>`;
+    return;
+  }
   el('login').hidden = true;
   el('panel').hidden = false;
   await refresh();
   live();
   setInterval(paintTeams, 1000);
+  initTabs();
 }
 
 el('login').addEventListener('submit', async e => {
@@ -28,6 +35,25 @@ el('login').addEventListener('submit', async e => {
   if (!error) boot();
 });
 
+// ---------------------------------------------------------------------------
+// Tabs
+// ---------------------------------------------------------------------------
+function initTabs() {
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      el('tab-dashboard').hidden = tab !== 'dashboard';
+      el('tab-content').hidden   = tab !== 'content';
+      if (tab === 'content') loadContentEditor();
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard refresh
+// ---------------------------------------------------------------------------
 async function refresh() {
   const [t, a, h, s] = await Promise.all([
     sb.from('teams').select('*').order('current_stage', { ascending: false }),
@@ -74,7 +100,6 @@ function paintTeams() {
         <button class="quiet" data-act="stage" data-id="${t.id}">Set stage</button>
       </td></tr>`;
   }).join('');
-
   el('teams').querySelectorAll('button').forEach(b => b.onclick = () => act(b.dataset));
 }
 
@@ -134,6 +159,186 @@ async function paintLog() {
     </div>`).join('');
 }
 
+// ---------------------------------------------------------------------------
+// Content editor
+// ---------------------------------------------------------------------------
+async function loadContentEditor() {
+  const { data } = await sb.from('stages').select('*').order('number');
+  stages = data || [];
+
+  const pick = el('stage-pick');
+  pick.innerHTML = stages.map(s =>
+    `<option value="${s.number}">Stage ${s.number} — ${s.title}</option>`).join('');
+
+  pick.onchange = () => renderStageEditor(Number(pick.value));
+  renderStageEditor(stages[0]?.number);
+}
+
+async function renderStageEditor(num) {
+  const stage = stages.find(s => s.number === num);
+  if (!stage) return;
+
+  // Fetch answers for this stage
+  const { data: answers } = await sb
+    .from('stage_answers')
+    .select('id, normalised, is_honeypot, note')
+    .eq('stage_number', num)
+    .order('is_honeypot');
+
+  const ed = el('stage-editor');
+  ed.innerHTML = `
+    <div class="editor-section">
+      <h2>Stage ${stage.number} — content</h2>
+
+      <label>Title</label>
+      <input type="text" id="ed-title" value="${esc(stage.title)}">
+
+      <label style="margin-top:1rem">Subtitle <span class="aside">(optional)</span></label>
+      <input type="text" id="ed-subtitle" value="${esc(stage.subtitle || '')}">
+
+      <label style="margin-top:1rem">Body HTML</label>
+      <textarea id="ed-body" rows="8" style="width:100%;font-family:var(--mono);
+        font-size:.85rem;background:#FBFAF7;border:1px solid var(--edge);
+        padding:.75rem;color:var(--ink)">${esc(stage.body_html)}</textarea>
+
+      <label style="margin-top:1rem">Minimum seconds on stage</label>
+      <input type="number" id="ed-floor" value="${stage.min_seconds}" style="width:8rem">
+
+      <div class="row" style="margin-top:1.25rem">
+        <button id="ed-save-stage">Save stage text</button>
+        <span id="ed-stage-msg" class="aside"></span>
+      </div>
+    </div>
+
+    <div class="editor-section" style="margin-top:2.5rem">
+      <h2>Stage ${stage.number} — passwords</h2>
+      <p class="aside">Answers are compared with all spaces, punctuation and capitalisation stripped.
+         Type the answer naturally and it will be normalised on save.</p>
+
+      <table class="teams" id="ed-answers">
+        <thead><tr>
+          <th>Answer (stored normalised)</th>
+          <th>Honeypot?</th>
+          <th>Note</th>
+          <th></th>
+        </tr></thead>
+        <tbody>
+          ${(answers || []).map(a => `
+            <tr data-id="${a.id}">
+              <td><input type="text" class="ans-val" value="${esc(a.normalised)}"
+                   style="width:100%;font-family:var(--mono);font-size:.9rem;
+                   background:#FBFAF7;border:1px solid var(--edge);padding:.4rem"></td>
+              <td style="text-align:center">
+                <input type="checkbox" class="ans-honey" ${a.is_honeypot ? 'checked' : ''}></td>
+              <td><input type="text" class="ans-note" value="${esc(a.note || '')}"
+                   placeholder="Why this honeypot?"
+                   style="width:100%;font-size:.85rem;background:#FBFAF7;
+                   border:1px solid var(--edge);padding:.4rem"></td>
+              <td><button class="quiet ans-del" style="color:var(--alarm)">Remove</button></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+
+      <div class="row" style="margin-top:1rem;flex-wrap:wrap;gap:.5rem">
+        <button id="ed-add-answer" class="quiet">+ Add answer</button>
+        <button id="ed-save-answers">Save all answers</button>
+        <span id="ed-ans-msg" class="aside"></span>
+      </div>
+    </div>`;
+
+  // Wire save stage
+  el('ed-save-stage').onclick = async () => {
+    const msg = el('ed-stage-msg');
+    msg.textContent = 'Saving…';
+    const { error } = await sb.from('stages').update({
+      title:       el('ed-title').value.trim(),
+      subtitle:    el('ed-subtitle').value.trim() || null,
+      body_html:   el('ed-body').value,
+      min_seconds: Number(el('ed-floor').value)
+    }).eq('number', num);
+    msg.textContent = error ? 'Error: ' + error.message : 'Saved.';
+    if (!error) {
+      // Update local cache so dropdown reflects new title
+      const s = stages.find(s => s.number === num);
+      if (s) s.title = el('ed-title').value.trim();
+      el('stage-pick').querySelector(`option[value="${num}"]`).textContent =
+        `Stage ${num} — ${el('ed-title').value.trim()}`;
+    }
+    setTimeout(() => { msg.textContent = ''; }, 3000);
+  };
+
+  // Wire add answer row
+  el('ed-add-answer').onclick = () => {
+    const tbody = el('ed-answers').querySelector('tbody');
+    const row = document.createElement('tr');
+    row.dataset.id = 'new';
+    row.innerHTML = `
+      <td><input type="text" class="ans-val" placeholder="Answer"
+           style="width:100%;font-family:var(--mono);font-size:.9rem;
+           background:#FBFAF7;border:1px solid var(--edge);padding:.4rem"></td>
+      <td style="text-align:center"><input type="checkbox" class="ans-honey"></td>
+      <td><input type="text" class="ans-note" placeholder="Why this honeypot?"
+           style="width:100%;font-size:.85rem;background:#FBFAF7;
+           border:1px solid var(--edge);padding:.4rem"></td>
+      <td><button class="quiet ans-del" style="color:var(--alarm)">Remove</button></td>`;
+    tbody.appendChild(row);
+    row.querySelector('.ans-del').onclick = () => row.remove();
+  };
+
+  // Wire delete on existing rows
+  ed.querySelectorAll('.ans-del').forEach(b =>
+    b.onclick = () => b.closest('tr').remove());
+
+  // Wire save answers
+  el('ed-save-answers').onclick = async () => {
+    const msg = el('ed-ans-msg');
+    msg.textContent = 'Saving…';
+
+    // Collect rows
+    const rows = [...el('ed-answers').querySelectorAll('tbody tr')];
+    const toSave = rows.map(r => ({
+      id:       r.dataset.id === 'new' ? null : Number(r.dataset.id),
+      val:      r.querySelector('.ans-val').value.trim(),
+      honey:    r.querySelector('.ans-honey').checked,
+      note:     r.querySelector('.ans-note').value.trim() || null
+    })).filter(r => r.val);
+
+    // Delete removed existing answers (those no longer in DOM)
+    const existingIds = (answers || []).map(a => a.id);
+    const keptIds = toSave.filter(r => r.id).map(r => r.id);
+    const toDelete = existingIds.filter(id => !keptIds.includes(id));
+    if (toDelete.length) {
+      await sb.from('stage_answers').delete().in('id', toDelete);
+    }
+
+    // Upsert remaining — normalise via SQL norm() function
+    for (const r of toSave) {
+      if (r.id) {
+        // Update existing
+        const { error } = await sb.rpc('update_answer', {
+          p_id: r.id, p_val: r.val, p_honey: r.honey, p_note: r.note });
+        if (error) { msg.textContent = 'Error: ' + error.message; return; }
+      } else {
+        // Insert new
+        const { error } = await sb.rpc('insert_answer', {
+          p_stage: num, p_val: r.val, p_honey: r.honey, p_note: r.note });
+        if (error) { msg.textContent = 'Error: ' + error.message; return; }
+      }
+    }
+
+    msg.textContent = 'Saved. Reloading…';
+    setTimeout(() => renderStageEditor(num), 800);
+  };
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ---------------------------------------------------------------------------
+// Realtime
+// ---------------------------------------------------------------------------
 function live() {
   sb.channel('control')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, refresh)

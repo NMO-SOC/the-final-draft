@@ -123,6 +123,11 @@ table.teams tr.flagged td{background:rgba(140,47,42,.10)}
 .cols{display:grid;grid-template-columns:1fr;gap:2.5rem}
 @media(min-width:60rem){.cols{grid-template-columns:2fr 1fr}}
 
+.tabs{display:flex;gap:.5rem;margin-bottom:2rem;border-bottom:1px solid var(--edge);padding-bottom:.75rem}
+.tab{background:transparent;color:var(--muted);border:1px solid var(--edge);padding:.5rem 1.25rem;font-size:.9rem}
+.tab.active{background:var(--brass);color:#F7F6F2;border-color:var(--brass)}
+.editor-section{max-width:52rem}
+
 @media(prefers-reduced-motion:no-preference){
   .reveal{animation:rise .5s ease-out}
   @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title>The Last Draft — control</title>
-<link rel="stylesheet" href="assets/styles.css?v=8">
+<link rel="stylesheet" href="assets/styles.css?v=9">
 </head>
 <body>
 <main class="wide">
@@ -24,25 +24,40 @@
   </form>
 
   <div id="panel" hidden>
-    <div class="row" id="controls"></div>
-    <div class="cols">
-      <div>
-        <h2>Teams</h2>
-        <table class="teams"><thead><tr>
-          <th>Team</th><th>Stage</th><th>On stage</th><th>Wrong</th>
-          <th>Flags</th><th>Penalty</th><th>Actions</th>
-        </tr></thead><tbody id="teams"></tbody></table>
+    <div class="tabs">
+      <button class="tab active" data-tab="dashboard">Dashboard</button>
+      <button class="tab" data-tab="content">Edit stages</button>
+    </div>
 
-        <h2>Hint requests</h2>
-        <div id="hints"></div>
+    <div id="tab-dashboard">
+      <div class="row" id="controls"></div>
+      <div class="cols">
+        <div>
+          <h2>Teams</h2>
+          <table class="teams"><thead><tr>
+            <th>Team</th><th>Stage</th><th>On stage</th><th>Wrong</th>
+            <th>Flags</th><th>Penalty</th><th>Actions</th>
+          </tr></thead><tbody id="teams"></tbody></table>
+          <h2>Hint requests</h2>
+          <div id="hints"></div>
+        </div>
+        <div>
+          <h2>Activity</h2>
+          <div class="log" id="log"></div>
+        </div>
       </div>
-      <div>
-        <h2>Activity</h2>
-        <div class="log" id="log"></div>
+    </div>
+
+    <div id="tab-content" hidden>
+      <p class="aside">Changes take effect immediately. Every team sees the updated text on their next page load.</p>
+      <div class="row" style="margin-bottom:1.5rem;align-items:center;gap:1rem">
+        <label for="stage-pick" style="margin:0">Stage</label>
+        <select id="stage-pick" style="width:auto"></select>
       </div>
+      <div id="stage-editor"></div>
     </div>
   </div>
 </main>
-<script type="module" src="assets/teacher.js?v=8"></script>
+<script type="module" src="assets/teacher.js?v=9"></script>
 </body>
 </html>
