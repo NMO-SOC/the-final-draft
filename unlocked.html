@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Unlocking&hellip;</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#000}
+  .wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  iframe{width:100%;height:100%;border:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <iframe id="v"
+    src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&controls=0&modestbranding=1&rel=0&playsinline=1"
+    allow="autoplay; encrypted-media" allowfullscreen></iframe>
+</div>
+<script>
+// Some browsers block unmuted autoplay across a navigation even after a
+// click on the previous page. Any tap/click on this page forces a reload
+// with the same src, which counts as a fresh user gesture and starts it.
+document.addEventListener('click', () => {
+  const f = document.getElementById('v');
+  f.src = f.src;
+}, { once: true });
+</script>
+</body>
+</html>
