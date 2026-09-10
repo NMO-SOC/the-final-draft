@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/styles.css?v=24">
+<link rel="stylesheet" href="assets/styles.css?v=25">
 </head>
 <body>
 <main>
@@ -18,25 +18,30 @@
     <p class="sub">Ten stages. One trail. Everything is logged.</p>
   </div>
 
-  <p>Sign in with your team name and the password your teacher gave you.
-     One device per team &mdash; signing in somewhere else will end this session.</p>
+  <div id="gate" hidden></div>
 
-  <form id="login">
-    <label for="team">Team name</label>
-    <input id="team" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required>
-    <label for="pw" style="margin-top:1rem">Password</label>
-    <input id="pw" type="password" autocomplete="current-password" required>
-    <div class="row"><button type="submit">Start the hunt</button></div>
-  </form>
+  <div id="signin" hidden>
+    <p>Sign in with your team name and the password your teacher gave you.
+       One device per team &mdash; signing in somewhere else will end this session.</p>
 
-  <div id="msg"></div>
+    <form id="login">
+      <label for="team">Team name</label>
+      <input id="team" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      <label for="pw" style="margin-top:1rem">Password</label>
+      <input id="pw" type="password" autocomplete="current-password" required>
+      <div class="row"><button type="submit">Start the hunt</button></div>
+    </form>
 
-  <p class="aside" style="margin-top:3rem">Nothing here can be answered by searching.
-     Answers that only a machine would give are recorded and cost you time.</p>
+    <div id="msg"></div>
+
+    <p class="aside" style="margin-top:3rem">Nothing here can be answered by searching.
+       Answers that only a machine would give are recorded and cost you time.</p>
+  </div>
 </main>
 
 <script type="module">
 import { sb, slugToEmail } from './assets/config.js?v=12';
+import { startCountdown } from './assets/countdown.js?v=1';
 const msg = document.getElementById('msg');
 
 const { data: { session } } = await sb.auth.getSession();
@@ -44,6 +49,23 @@ if (session) {
   // A previous session exists (e.g. teacher account). Sign out so the
   // student can log in fresh.
   await sb.auth.signOut();
+}
+
+// Before the window opens the page is a countdown, not a login box.
+function showSignin() {
+  document.getElementById('gate').hidden = true;
+  document.getElementById('signin').hidden = false;
+}
+
+const { data: w, error: wErr } = await sb.rpc('get_hunt_window');
+if (wErr || !w || w.open_now || !w.opens_at) {
+  // If the window cannot be read for any reason, fall back to letting teams in
+  // rather than locking everyone out of a hunt that is running.
+  showSignin();
+} else {
+  const gate = document.getElementById('gate');
+  gate.hidden = false;
+  startCountdown(gate, w.opens_at, w.server_now, showSignin);
 }
 
 document.getElementById('login').addEventListener('submit', async e => {

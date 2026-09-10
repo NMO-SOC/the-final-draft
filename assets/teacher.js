@@ -127,25 +127,45 @@ function toLocalInput(ts) {
 }
 
 function paintSettings() {
-  const has = settings.opens_at || settings.closes_at;
+  const on = !!settings.window_on;
   el('hunt-settings').innerHTML = `
     <div class="row" style="align-items:flex-end;gap:1rem;margin-top:1.5rem">
+      <label class="tickbox" for="win-on">
+        <input type="checkbox" id="win-on" ${on ? 'checked' : ''}>
+        <span>Use opening times</span>
+      </label>
       <div>
         <label for="win-open">Opens</label>
-        <input type="datetime-local" id="win-open" value="${toLocalInput(settings.opens_at)}">
+        <input type="datetime-local" id="win-open" value="${toLocalInput(settings.opens_at)}"
+               ${on ? '' : 'disabled'}>
       </div>
       <div>
         <label for="win-close">Closes</label>
-        <input type="datetime-local" id="win-close" value="${toLocalInput(settings.closes_at)}">
+        <input type="datetime-local" id="win-close" value="${toLocalInput(settings.closes_at)}"
+               ${on ? '' : 'disabled'}>
       </div>
-      <button id="win-save">Save window</button>
+      <button id="win-save" ${on ? '' : 'disabled'}>Save window</button>
       <button id="board-toggle" class="quiet">
         ${settings.leaderboard_on ? 'Hide standings' : 'Show standings'}</button>
       <span id="win-msg" class="aside"></span>
     </div>
-    <p class="aside">${has
-      ? 'Outside this window the hunt is unreachable. Checked in the database, not the browser.'
-      : 'No window set: the hunt is reachable whenever it is not frozen.'}</p>`;
+    <p class="aside">${on
+      ? 'Before it opens, teams see a countdown instead of the sign-in box. Checked in the database, not the browser.'
+      : 'Off: the hunt is reachable whenever it is not frozen. The times above are kept but ignored.'}</p>`;
+
+  el('win-on').onchange = async () => {
+    const next = el('win-on').checked;
+    const { error } = await sb.from('settings').update({ window_on: next }).eq('id', 1);
+    if (error) {
+      el('win-msg').textContent = /window_on/.test(error.message)
+        ? 'Run supabase/08_window_and_announcements.sql first.' : 'Error: ' + error.message;
+      el('win-on').checked = !next;
+      return;
+    }
+    settings.window_on = next;
+    paintSettings();
+    el('win-msg').textContent = next ? 'Opening times in force.' : 'Opening times off.';
+  };
 
   el('win-save').onclick = async () => {
     const o = el('win-open').value, c = el('win-close').value;
@@ -191,7 +211,7 @@ function initBroadcast() {
 
     input.value = '';
     const { error } = await sb.from('messages').insert(
-      teams.map(t => ({ team_id: t.id, sender: 'teacher', body: `To all teams — ${body}` })));
+      teams.map(t => ({ team_id: t.id, sender: 'teacher', body, is_announcement: true })));
     el('broadcast-msg').textContent = error
       ? 'Error: ' + error.message
       : `Sent to ${teams.length} team${teams.length === 1 ? '' : 's'}.`;

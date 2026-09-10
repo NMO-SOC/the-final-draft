@@ -1,6 +1,9 @@
 import { sb, roman, clock } from './config.js?v=15';
 import { renderGrid } from './grid.js?v=16';
 import { showConfirm } from './modal.js?v=1';
+import { startCountdown } from './countdown.js?v=1';
+
+let stopCountdown = null;
 
 const stageEl = document.getElementById('stage');
 const nameEl  = document.getElementById('teamname');
@@ -43,6 +46,16 @@ async function load(soft) {
 }
 
 function blocked(d) {
+  // Before opening, the page is a countdown rather than a notice.
+  if (d.error === 'not_open' && d.opens_at) {
+    document.getElementById('board').hidden = true;
+    document.getElementById('chat').hidden = true;
+    if (stopCountdown) stopCountdown();
+    stopCountdown = startCountdown(stageEl, d.opens_at, d.server_now, () => load());
+    return;
+  }
+  document.getElementById('chat').hidden = false;
+
   const words = {
     frozen:    'The hunt is paused. Wait for your teacher.',
     not_open:  'The hunt is not open yet.',
@@ -71,6 +84,9 @@ function finished(d) {
 
 function render() {
   const d = state;
+  // Coming back from the countdown: stop it and restore the page furniture.
+  if (stopCountdown) { stopCountdown(); stopCountdown = null; }
+  document.getElementById('chat').hidden = false;
   stageEl.innerHTML = `
     <div class="reveal">
       <div class="stagehead">
@@ -342,10 +358,28 @@ async function initChat() {
 
   sb.channel('realtime:messages')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+      const m = payload.new;
       if (chatOpen) loadChat();
-      if (payload.new.sender === 'teacher' && (!chatOpen || document.hidden)) markUnread();
+      if (m.sender === 'teacher' && m.is_announcement) showAnnouncement(m.body);
+      if (m.sender === 'teacher' && (!chatOpen || document.hidden)) markUnread();
     })
     .subscribe();
+}
+
+// An announcement has to be seen, not discovered later in the chat log.
+function showAnnouncement(body) {
+  document.getElementById('announce')?.remove();
+  const el = document.createElement('div');
+  el.id = 'announce';
+  el.className = 'announce';
+  el.innerHTML = `
+    <div class="announce-card" role="alert">
+      <p class="announce-from">From your teacher</p>
+      <p class="announce-body">${escHtml(body)}</p>
+      <div class="row"><button type="button" id="announce-ok">Got it</button></div>
+    </div>`;
+  document.body.appendChild(el);
+  el.querySelector('#announce-ok').addEventListener('click', () => el.remove());
 }
 
 async function loadChat() {
@@ -353,8 +387,9 @@ async function loadChat() {
     .eq('team_id', myTeamId).order('created_at', { ascending: true }).limit(200);
   const log = document.getElementById('chat-log');
   log.innerHTML = (data || []).map(m => `
-    <div class="chat-msg ${m.sender}">
-      <span class="who">${m.sender === 'team' ? 'You' : 'Teacher'}</span>
+    <div class="chat-msg ${m.sender}${m.is_announcement ? ' announcement' : ''}">
+      <span class="who">${m.sender === 'team' ? 'You'
+                         : m.is_announcement ? 'Announcement' : 'Teacher'}</span>
       ${escHtml(m.body)}
       <time>${new Date(m.created_at).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}</time>
     </div>`).join('');
