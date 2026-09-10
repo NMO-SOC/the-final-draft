@@ -1,3 +1,10 @@
+-- WARNING, read before running this again.
+-- These inserts used to end in `on conflict (number) do update set title, body_html`,
+-- which meant re-running this file silently overwrote stages 1-4 with the text
+-- below, destroying anything written in the stage editor since. They are now
+-- `do nothing`: safe to re-run, and it will not touch a stage that exists.
+-- To genuinely reset a stage to the text below, delete that stage row first.
+
 -- The Great Literary Hunt — content seed
 -- Stages I–IV are written out in full. V–X are stubs: they depend on your
 -- building, your library and what your classes have actually studied, so I
@@ -25,7 +32,7 @@ and marked with a green band. Find one.</p>
 <p>That word is your password. Spelling matters; punctuation does not.</p>
 <p class="aside">There is no digital copy of this edition. There is no point
 looking for one.</p>$$, 'text', 60)
-on conflict (number) do update set title=excluded.title, body_html=excluded.body_html;
+on conflict (number) do nothing;   -- never overwrite an authored stage
 
 insert into public.stage_answers (stage_number, normalised, is_honeypot, note) values
 (1, 'REPLACEME', false, null);   -- <<< set this to public.norm('yourword')
@@ -48,7 +55,7 @@ He writes each traveller&rsquo;s name<br>
 And knows that none will come so late.</p>
 </div>
 <p>Enter the six words in order, separated by spaces.</p>$$, 'text', 120)
-on conflict (number) do update set title=excluded.title, body_html=excluded.body_html;
+on conflict (number) do nothing;   -- never overwrite an authored stage
 
 insert into public.stage_answers (stage_number, normalised, is_honeypot, note) values
 (2, public.norm('fast stair past there flame wait'), false, null);
@@ -85,7 +92,7 @@ lying on the table then. The room had been locked since four and I have never
 had a key to it.&rdquo;</p>
 
 <p>Whose account holds? Enter the surname.</p>$$, 'text', 90)
-on conflict (number) do update set title=excluded.title, body_html=excluded.body_html;
+on conflict (number) do nothing;   -- never overwrite an authored stage
 
 insert into public.stage_answers (stage_number, normalised, is_honeypot, note) values
 (3, public.norm('Dunn'), false, null),
@@ -123,8 +130,7 @@ $$
   ]
 }
 $$::jsonb, 240)
-on conflict (number) do update set title=excluded.title, body_html=excluded.body_html,
-  payload=excluded.payload, kind=excluded.kind;
+on conflict (number) do nothing;   -- never overwrite an authored stage
 
 insert into public.stage_answers (stage_number, normalised, is_honeypot, note) values
 (4, public.norm('KOVPH'), false, null);
