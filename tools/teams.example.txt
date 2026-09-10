@@ -1,0 +1,4 @@
+# One team name per line, exactly as students should type it.
+# Blank lines and lines starting with # are ignored.
+The Pemberleys
+Thornfield Hall
