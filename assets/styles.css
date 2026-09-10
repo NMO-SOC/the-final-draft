@@ -39,6 +39,20 @@ body{
   line-height:1.62;
   font-weight:400;
   -webkit-font-smoothing:antialiased;
+  /* Old-style figures sit on the baseline with ascenders and descenders, the
+     way numerals do in a printed book; lining figures are a newspaper
+     convention that quietly reads as "web page". Data keeps lining figures
+     further down, because a clock that bobs up and down is just harder to
+     read. */
+  font-variant-numeric:oldstyle-nums;
+  font-variant-ligatures:common-ligatures contextual;
+  text-rendering:optimizeLegibility;
+}
+
+/* Numbers that are data, not prose. */
+.status,.log,.chip,.ref,table.teams,table.grid,.cd-n,.preview-frame .of,
+input,textarea,select,code,.board-stage,.board-pos{
+  font-variant-numeric:lining-nums tabular-nums;
 }
 main{max-width:38rem;margin:0 auto;padding:4rem 1.5rem 7rem}
 a{color:var(--brass)}
@@ -69,7 +83,11 @@ p{margin:0 0 1rem}
 .of{display:block;text-align:center;font-size:.8rem;color:var(--muted);
     font-variant:small-caps;letter-spacing:.14em;margin:-.5rem 0 1.75rem}
 .stagehead{text-align:center}
-.stagehead h2{margin-top:0;font-size:1.75rem;font-weight:500}
+/* Cased here rather than in the stage records, so titles cannot drift apart
+   again as stages get written. Change these two lines to switch the whole
+   hunt back to title case. */
+.stagehead h2{margin-top:0;font-size:1.6rem;font-weight:500;
+  text-transform:uppercase;letter-spacing:.09em}
 .stagehead .aside{font-style:italic}
 .rule{border:0;border-top:1px solid var(--edge);width:5rem;margin:2rem auto}
 
@@ -88,6 +106,14 @@ p{margin:0 0 1rem}
 .teacher-grid figure{margin:0;flex:1 1 0;min-width:0}
 .teacher-grid img{width:100%;border-radius:var(--radius);border:1px solid var(--edge);display:block}
 @media(max-width:30rem){.teacher-grid{flex-wrap:wrap}.teacher-grid figure{flex:1 1 45%}}
+
+/* How the hunt ends */
+.colophon{text-align:center;padding:2rem 0 1rem}
+.colophon .rule{margin:1.25rem auto}
+.colophon h2{text-transform:none;letter-spacing:.01em;margin-top:2rem}
+.colophon p:not(.finis){max-width:28rem;margin-left:auto;margin-right:auto;color:var(--muted)}
+.finis{font-variant:small-caps;letter-spacing:.3em;font-size:1.6rem;
+       color:var(--brass);margin:0;padding-left:.3em}
 
 /* Countdown before the hunt opens */
 .countdown{text-align:center;padding:2rem 0 1rem}

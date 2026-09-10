@@ -77,9 +77,19 @@ function blocked(d) {
 }
 
 function finished(d) {
-  stageEl.innerHTML = `<p class="numeral">&#10003;</p>
-    <h2>The last draft is finished</h2>
-    <p>Every stage cleared. Your finishing time is with the Hunt Master.</p>`;
+  // load() sets the team name only on the playing path, so without this the
+  // masthead still reads "…" on the one screen that should feel like an ending.
+  if (d.team) nameEl.textContent = d.team;
+  // A book does not end with a tick. It ends with a colophon.
+  document.getElementById('chat').hidden = false;
+  stageEl.innerHTML = `
+    <div class="colophon reveal">
+      <hr class="rule">
+      <p class="finis">Finis</p>
+      <hr class="rule">
+      <h2>The last draft is finished</h2>
+      <p>Every stage cleared. Your finishing time is with the Hunt Master.</p>
+    </div>`;
 }
 
 function render() {
