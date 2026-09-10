@@ -23,7 +23,7 @@ if (!session) location.href = 'index.html';
 
 async function load(soft) {
   const { data, error } = await sb.rpc('get_stage');
-  if (error) { fail('Something went wrong reaching the hunt. Tell your teacher.'); return; }
+  if (error) { fail('Something went wrong reaching the hunt. Tell the Hunt Master.'); return; }
 
   // Soft reload: only redraw if stage/lock/freeze state changed.
   // This prevents wrong-answer messages being wiped by background team updates.
@@ -57,11 +57,11 @@ function blocked(d) {
   document.getElementById('chat').hidden = false;
 
   const words = {
-    frozen:    'The hunt is paused. Wait for your teacher.',
+    frozen:    'The hunt is paused. Wait for the Hunt Master.',
     not_open:  'The hunt is not open yet.',
     closed:    'The hunt has closed.',
-    locked:    `Your team is locked. ${d.reason || 'Speak to your teacher.'}`,
-    no_team:   'This account is not attached to a team. Tell your teacher.'
+    locked:    `Your team is locked. ${d.reason || 'Speak to the Hunt Master.'}`,
+    no_team:   'This account is not attached to a team. Tell the Hunt Master.'
   };
   stageEl.innerHTML = `<div class="notice bad">${words[d.error] || 'Unavailable.'}</div>
     ${ d.error === 'no_team'
@@ -79,7 +79,7 @@ function blocked(d) {
 function finished(d) {
   stageEl.innerHTML = `<p class="numeral">&#10003;</p>
     <h2>The last draft is finished</h2>
-    <p>Every stage cleared. Your finishing time is with your teacher.</p>`;
+    <p>Every stage cleared. Your finishing time is with the Hunt Master.</p>`;
 }
 
 function render() {
@@ -138,7 +138,7 @@ function render() {
 function renderCompletionForm(d) {
   const status = d.completion?.status;
   if (status === 'pending') {
-    return `<div class="notice">Sent to your teacher. Waiting for the go-ahead.</div>
+    return `<div class="notice">Sent to the Hunt Master. Waiting for the go-ahead.</div>
       <p class="aside" style="margin-top:.5rem">What you sent:</p>
       <p style="color:var(--alarm)">${escHtml(d.completion.text)}</p>`;
   }
@@ -151,7 +151,7 @@ function renderCompletionForm(d) {
         padding:.6rem;border:1px solid var(--edge);background:var(--card);color:var(--ink);
         resize:vertical">${status === 'rejected' ? '' : ''}</textarea>
       <div class="row">
-        <button type="submit" id="go">Send to your teacher</button>
+        <button type="submit" id="go">Send to the Hunt Master</button>
         <button type="button" class="quiet" id="hint">Ask for a hint</button>
       </div>
     </form>`;
@@ -193,7 +193,7 @@ function drawHints() {
   const hints = state.hints || [];
   box.innerHTML = hints.map(h => h.status === 'sent'
     ? `<div class="notice hint"><strong>Hint ${h.tier}.</strong> ${h.message}</div>`
-    : `<div class="notice">Hint ${h.tier} requested. Your teacher will decide.</div>`
+    : `<div class="notice">Hint ${h.tier} requested. The Hunt Master will decide.</div>`
   ).join('');
 }
 
@@ -374,7 +374,7 @@ function showAnnouncement(body) {
   el.className = 'announce';
   el.innerHTML = `
     <div class="announce-card" role="alert">
-      <p class="announce-from">From your teacher</p>
+      <p class="announce-from">From the Hunt Master</p>
       <p class="announce-body">${escHtml(body)}</p>
       <div class="row"><button type="button" id="announce-ok">Got it</button></div>
     </div>`;
@@ -389,7 +389,7 @@ async function loadChat() {
   log.innerHTML = (data || []).map(m => `
     <div class="chat-msg ${m.sender}${m.is_announcement ? ' announcement' : ''}">
       <span class="who">${m.sender === 'team' ? 'You'
-                         : m.is_announcement ? 'Announcement' : 'Teacher'}</span>
+                         : m.is_announcement ? 'Announcement' : 'Hunt Master'}</span>
       ${escHtml(m.body)}
       <time>${new Date(m.created_at).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}</time>
     </div>`).join('');
