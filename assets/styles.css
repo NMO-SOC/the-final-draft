@@ -189,6 +189,35 @@ table.teams tr.flagged:hover td{background:rgba(140,47,42,.16)}
      cursor:pointer;transition:background .12s ease}
 .tab:hover:not(.active){background:var(--panel)}
 .tab.active{background:var(--brass);color:var(--brass-ink);border-color:var(--brass)}
+/* Which stages still need work */
+.readiness{border:1px solid var(--edge);background:var(--panel);padding:1rem 1.25rem;
+           margin-bottom:1.5rem;max-width:52rem}
+.readiness h2{margin:0 0 .75rem;font-size:.95rem;font-variant:small-caps;
+              letter-spacing:.1em;color:var(--muted)}
+.readiness-list{display:flex;flex-direction:column;gap:.25rem}
+.readiness-row{display:flex;align-items:center;gap:.75rem;width:100%;text-align:left;
+               background:transparent;border:0;border-left:2px solid var(--alarm);
+               padding:.4rem .6rem;cursor:pointer;font-family:var(--serif);
+               font-size:.9rem;color:var(--ink)}
+.readiness-row:hover{background:var(--ground)}
+.readiness-row.done{border-left-color:var(--ok);opacity:.65}
+.readiness-n{font-family:var(--mono);font-size:.75rem;color:var(--muted);min-width:1.5rem}
+.readiness-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.readiness-tags{display:flex;gap:.3rem;flex-wrap:wrap}
+
+/* Style reference beside the body box */
+.cheats{margin-top:1rem;border:1px solid var(--edge);padding:.6rem .8rem;background:var(--panel)}
+.cheats summary{cursor:pointer;font-size:.85rem;font-variant:small-caps;letter-spacing:.08em;
+                color:var(--muted)}
+.cheats .aside{margin:.6rem 0 .5rem;font-size:.8rem}
+.cheat{display:flex;gap:.75rem;align-items:baseline;width:100%;text-align:left;
+       background:transparent;border:0;border-bottom:1px solid var(--edge);
+       padding:.35rem .2rem;cursor:pointer;color:var(--ink);font-family:var(--serif)}
+.cheat:last-child{border-bottom:0}
+.cheat:hover{background:var(--ground)}
+.cheat code{font-family:var(--mono);font-size:.75rem;color:var(--brass);min-width:6.5rem}
+.cheat span{font-size:.82rem;color:var(--muted)}
+
 .editor-section{max-width:52rem}
 .editor-cols{display:grid;grid-template-columns:1fr;gap:2rem}
 @media(min-width:72rem){.editor-cols{grid-template-columns:1fr 1fr}}

@@ -30,6 +30,11 @@ function markFlash() {
 
 document.addEventListener('visibilitychange', () => { if (!document.hidden) clearFlash(); });
 
+// Last line of defence: closing or reloading with unsaved stage edits.
+window.addEventListener('beforeunload', e => {
+  if (editorDirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
 // ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
@@ -337,6 +342,20 @@ async function paintLog() {
 // ---------------------------------------------------------------------------
 // Content editor
 // ---------------------------------------------------------------------------
+let editorDirty = false;      // unsaved edits in the stage form
+let currentStageNum = null;
+
+// The classes that make stage text look right live in styles.css, which is no
+// help while writing a stage. Keep them to hand instead.
+const CHEATS = [
+  { label: 'p.aside',  what: 'small muted note',           snip: '<p class="aside"></p>' },
+  { label: 'div.verse',what: 'indented italic verse',      snip: '<div class="verse">\n<p></p>\n</div>' },
+  { label: 'p.who',    what: 'small-caps speaker name',    snip: '<p class="who"></p>' },
+  { label: 'p.ref',    what: 'monospace reference line',   snip: '<p class="ref">Page 87 &middot; line 12</p>' },
+  { label: 'span.gap', what: 'blank to be filled in',      snip: '<span class="gap">1</span>' },
+  { label: 'hr.rule',  what: 'short centred divider',      snip: '<hr class="rule">' },
+];
+
 async function loadContentEditor() {
   const { data } = await sb.from('stages').select('*').order('number');
   stages = data || [];
@@ -345,8 +364,64 @@ async function loadContentEditor() {
   pick.innerHTML = stages.map(s =>
     `<option value="${s.number}">Stage ${s.number} — ${s.title}</option>`).join('');
 
-  pick.onchange = () => renderStageEditor(Number(pick.value));
+  pick.onchange = async () => {
+    const target = Number(pick.value);
+    if (editorDirty) {
+      const ok = await showConfirm({
+        title: 'Discard changes?',
+        body: 'This stage has edits you have not saved. Moving to another stage loses them.',
+        confirmLabel: 'Discard and move'
+      });
+      if (!ok) { pick.value = String(currentStageNum); return; }
+    }
+    renderStageEditor(target);
+  };
+
+  paintReadiness();
   renderStageEditor(stages[0]?.number);
+}
+
+// Which stages are still unfinished. Saves going stage by stage to find out.
+async function paintReadiness() {
+  const { data: all } = await sb.from('stage_answers')
+    .select('stage_number, normalised, is_honeypot');
+  const answers = all || [];
+  const isStub = h => /Replace this with|Paste your/i.test(h || '');
+
+  const items = stages.map(s => {
+    const real = answers.filter(a =>
+      a.stage_number === s.number && !a.is_honeypot && a.normalised !== 'replaceme');
+    const placeholder = answers.some(a =>
+      a.stage_number === s.number && a.normalised === 'replaceme');
+    const gaps = [];
+    // A completion stage is marked by the teacher, so it has no password.
+    if (s.kind !== 'completion' && !real.length)
+      gaps.push(placeholder ? 'placeholder answer' : 'no answer');
+    if (isStub(s.body_html)) gaps.push('stub text');
+    return { n: s.number, title: s.title, gaps };
+  });
+
+  const left = items.filter(i => i.gaps.length);
+  el('stage-readiness').innerHTML = `
+    <div class="readiness">
+      <h2>${left.length ? `${left.length} stage${left.length === 1 ? '' : 's'} still to finish`
+                        : 'Every stage is ready'}</h2>
+      <div class="readiness-list">
+        ${items.map(i => `
+          <button class="readiness-row${i.gaps.length ? '' : ' done'}" data-go="${i.n}">
+            <span class="readiness-n">${i.n}</span>
+            <span class="readiness-title">${esc(i.title)}</span>
+            <span class="readiness-tags">${
+              i.gaps.length ? i.gaps.map(g => `<span class="chip alert">${g}</span>`).join('')
+                            : '<span class="chip">ready</span>'}</span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+
+  el('stage-readiness').querySelectorAll('[data-go]').forEach(b => b.onclick = () => {
+    el('stage-pick').value = b.dataset.go;
+    el('stage-pick').onchange();
+  });
 }
 
 async function renderStageEditor(num) {
@@ -376,6 +451,15 @@ async function renderStageEditor(num) {
         <textarea id="ed-body" rows="12" style="width:100%;font-family:var(--mono);
           font-size:.82rem;background:var(--card);border:1px solid var(--edge);
           padding:.75rem;color:var(--ink);resize:vertical">${esc(stage.body_html)}</textarea>
+
+        <details class="cheats">
+          <summary>Styles you can use in the body</summary>
+          <p class="aside">Click one to insert it where the cursor is.</p>
+          ${CHEATS.map((c, i) => `
+            <button type="button" class="cheat" data-cheat="${i}">
+              <code>${esc(c.label)}</code><span>${esc(c.what)}</span>
+            </button>`).join('')}
+        </details>
 
         <label style="margin-top:1rem">Minimum seconds on stage</label>
         <input type="number" id="ed-floor" value="${stage.min_seconds}" style="width:8rem">
@@ -461,6 +545,28 @@ async function renderStageEditor(num) {
     el(id).addEventListener('input', updatePreview));
   updatePreview();
 
+  // Anything typed or toggled anywhere in the editor counts as unsaved.
+  currentStageNum = num;
+  editorDirty = false;
+  ed.addEventListener('input',  () => { editorDirty = true; });
+  ed.addEventListener('change', () => { editorDirty = true; });
+  el('ed-body').addEventListener('focus', e => { e.target.dataset.touched = '1'; });
+
+  ed.querySelectorAll('[data-cheat]').forEach(b => b.onclick = () => {
+    const { snip } = CHEATS[Number(b.dataset.cheat)];
+    const box = el('ed-body');
+    // With no cursor placed, selectionStart reads 0 and the snippet would land
+    // before the opening paragraph. Append instead — that is what you meant.
+    const placed = box.dataset.touched === '1';
+    const at  = placed ? box.selectionStart : box.value.length;
+    const end = placed ? box.selectionEnd   : box.value.length;
+    box.value = box.value.slice(0, at) + snip + box.value.slice(end);
+    box.focus();
+    box.selectionStart = box.selectionEnd = at + snip.length;
+    updatePreview();
+    editorDirty = true;
+  });
+
   // Wire save stage
   el('ed-save-stage').onclick = async () => {
     const msg = el('ed-stage-msg');
@@ -475,11 +581,18 @@ async function renderStageEditor(num) {
     }).eq('number', num);
     msg.textContent = error ? 'Error: ' + error.message : 'Saved.';
     if (!error) {
-      // Update local cache so dropdown reflects new title
+      editorDirty = false;
+      // Keep the local cache in step so the picker and the readiness list
+      // both reflect what was just saved.
       const s = stages.find(s => s.number === num);
-      if (s) s.title = el('ed-title').value.trim();
+      if (s) {
+        s.title     = el('ed-title').value.trim();
+        s.body_html = el('ed-body').value;
+        s.kind      = el('ed-kind').value;
+      }
       el('stage-pick').querySelector(`option[value="${num}"]`).textContent =
         `Stage ${num} — ${el('ed-title').value.trim()}`;
+      paintReadiness();
     }
     setTimeout(() => { msg.textContent = ''; }, 3000);
   };
@@ -544,6 +657,8 @@ async function renderStageEditor(num) {
     }
 
     msg.textContent = 'Saved. Reloading…';
+    editorDirty = false;
+    paintReadiness();
     setTimeout(() => renderStageEditor(num), 800);
   };
 }
