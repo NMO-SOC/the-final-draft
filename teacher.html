@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/styles.css?v=23">
+<link rel="stylesheet" href="assets/styles.css?v=24">
 </head>
 <body>
 <main class="wide">
@@ -47,13 +47,17 @@
 
       <div class="cols">
         <div>
-          <h2>Teams</h2>
+          <div class="row" style="justify-content:space-between;margin:0">
+            <h2 style="margin-bottom:.5rem">Teams</h2>
+            <button class="quiet" id="export-csv">Export results</button>
+          </div>
           <div class="table-scroll">
           <table class="teams"><thead><tr>
             <th>Team</th><th>Stage</th><th>On stage</th><th>Wrong</th>
             <th>Flags</th><th>Penalty</th><th>Actions</th>
           </tr></thead><tbody id="teams"></tbody></table>
           </div>
+          <div id="history" class="history" hidden></div>
           <h2>Hint requests</h2>
           <div id="hints"></div>
           <h2>Completions to review</h2>
@@ -87,6 +91,6 @@
     </div>
   </div>
 </main>
-<script type="module" src="assets/teacher.js?v=19"></script>
+<script type="module" src="assets/teacher.js?v=20"></script>
 </body>
 </html>

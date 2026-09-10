@@ -58,6 +58,7 @@ async function boot() {
   initTabs();
   initChat();
   initBroadcast();
+  el('export-csv').onclick = exportCsv;
 }
 
 el('login').addEventListener('submit', async e => {
@@ -226,11 +227,13 @@ function paintTeams() {
       <td>${wrongCount(t.id, t.current_stage)}</td>
       <td>${t.flags ? `<span class="chip alert">${t.flags}</span>` : '0'}</td>
       <td>${Math.round(t.penalty_ms / 60000)} min</td>
-      <td>
+      <td class="acts">
         <button class="quiet" data-act="lock" data-id="${t.id}" data-on="${t.locked ? 0 : 1}">
           ${t.locked ? 'Unlock' : 'Lock'}</button>
         <button class="quiet" data-act="pen" data-id="${t.id}">Penalty</button>
         <button class="quiet" data-act="stage" data-id="${t.id}">Set stage</button>
+        <button class="quiet" data-act="history" data-id="${t.id}">History</button>
+        <button class="quiet" data-act="reset" data-id="${t.id}">Reset</button>
       </td></tr>`;
   }).join('');
   el('teams').querySelectorAll('button').forEach(b => b.onclick = () => act(b.dataset));
@@ -270,7 +273,129 @@ async function act(d) {
     if (!n) return;
     await sb.rpc('set_stage', { p_team: d.id, p_stage: Number(n) });
   }
+  if (d.act === 'history') { showHistory(d.id); return; }
+  if (d.act === 'reset') {
+    const team = teams.find(t => t.id === d.id);
+    const ok = await showConfirm({
+      title: `Reset ${team ? esc(team.name) : 'team'}?`,
+      body: 'Puts them back to stage 1 and permanently deletes their attempts, '
+          + 'hints, completions, penalties and messages. Cannot be undone.',
+      confirmLabel: 'Reset team'
+    });
+    if (!ok) return;
+    const { data, error } = await sb.rpc('reset_team', { p_team: d.id });
+    if (error || data?.error) {
+      await showConfirm({
+        title: 'Reset failed',
+        body: (error?.message || data.error) + '. If this says the function is missing, '
+            + 'run supabase/07_reset_team.sql in the SQL editor.',
+        confirmLabel: 'OK', cancelLabel: 'Close'
+      });
+    }
+  }
   refresh();
+}
+
+// ---------------------------------------------------------------------------
+// Results export
+// ---------------------------------------------------------------------------
+// Reads fresh rather than reusing the dashboard's arrays: those are capped at
+// 400 attempts for display, which would quietly under-count a long hunt.
+async function exportCsv() {
+  const btn = el('export-csv');
+  btn.disabled = true; btn.textContent = 'Building…';
+
+  const [{ data: att }, { data: hn }] = await Promise.all([
+    sb.from('attempts').select('*').limit(20000),
+    sb.from('hints').select('*').limit(5000)
+  ]);
+  const A = att || [], H = hn || [];
+
+  // clock() is MM:SS, which turns a two-day-old start into "2632:24". An export
+  // that gets read in a spreadsheet needs hours.
+  const duration = ms => {
+    const s = Math.max(0, Math.floor(ms / 1000)), p = n => String(n).padStart(2, '0');
+    return `${p(Math.floor(s / 3600))}:${p(Math.floor(s % 3600 / 60))}:${p(s % 60)}`;
+  };
+
+  const cols = ['Team','Stage reached','Finished','Total time','Total minutes','Penalty (min)',
+                'Flags','Wrong answers','Honeypots hit','Pasted','Hints sent'];
+  const rows = teams.map(t => {
+    const mine = A.filter(a => a.team_id === t.id);
+    const end = t.finished_at ? new Date(t.finished_at) : new Date();
+    return [
+      t.name,
+      t.finished_at ? 'finished' : t.current_stage,
+      t.finished_at ? new Date(t.finished_at).toLocaleString('en-AU') : '',
+      t.started_at ? duration(end - new Date(t.started_at)) : '',
+      t.started_at ? Math.round((end - new Date(t.started_at)) / 60000) : '',
+      Math.round((t.penalty_ms || 0) / 60000),
+      t.flags || 0,
+      mine.filter(a => !a.correct).length,
+      mine.filter(a => a.honeypot).length,
+      mine.filter(a => a.pasted).length,
+      H.filter(h => h.team_id === t.id && h.status === 'sent').length
+    ];
+  });
+
+  const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = [cols, ...rows].map(r => r.map(cell).join(',')).join('\r\n');
+
+  const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `last-draft-results-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+
+  btn.disabled = false; btn.textContent = 'Export results';
+}
+
+// ---------------------------------------------------------------------------
+// One team's full trail, for when a flag is disputed
+// ---------------------------------------------------------------------------
+async function showHistory(teamId) {
+  const team = teams.find(t => t.id === teamId);
+  const box = el('history');
+  box.hidden = false;
+  box.innerHTML = `<h2>History — ${esc(team ? team.name : '')}</h2><p class="aside">Loading…</p>`;
+
+  const [{ data: att }, { data: ev }] = await Promise.all([
+    sb.from('attempts').select('*').eq('team_id', teamId).order('created_at', { ascending: false }).limit(200),
+    sb.from('events').select('*').eq('team_id', teamId).order('created_at', { ascending: false }).limit(200)
+  ]);
+
+  const when = ts => new Date(ts).toLocaleString('en-AU',
+    { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+  box.innerHTML = `
+    <h2>History — ${esc(team ? team.name : '')}</h2>
+    <div class="row" style="margin:0 0 1rem"><button class="quiet" id="hist-close">Close</button></div>
+    <h2 class="sub-h">Answers tried (${(att || []).length})</h2>
+    <div class="table-scroll">
+      <table class="teams"><thead><tr>
+        <th>When</th><th>Stage</th><th>Typed</th><th>Result</th>
+        <th>On stage</th><th>Pasted</th><th>Tab hidden</th>
+      </tr></thead><tbody>
+        ${(att || []).map(a => `<tr class="${a.honeypot ? 'flagged' : ''}">
+          <td>${when(a.created_at)}</td>
+          <td>${a.stage_number}</td>
+          <td style="font-family:var(--mono);font-size:.8rem;white-space:normal">${esc(a.submitted)}</td>
+          <td>${a.correct ? 'correct'
+                : a.honeypot ? '<span class="chip alert">honeypot</span>' : 'wrong'}</td>
+          <td>${a.seconds_on_stage != null ? clock(a.seconds_on_stage * 1000) : ''}</td>
+          <td>${a.pasted ? '<span class="chip alert">pasted</span>' : ''}</td>
+          <td>${a.hidden_ms ? Math.round(a.hidden_ms / 1000) + 's' : ''}</td>
+        </tr>`).join('') || '<tr><td colspan="7" class="aside">No attempts recorded.</td></tr>'}
+      </tbody></table>
+    </div>
+    <h2 class="sub-h">Log (${(ev || []).length})</h2>
+    <div class="log">${(ev || []).map(e => `
+      <div class="${e.severity}"><time>${when(e.created_at)}</time>${esc(e.detail || e.kind)}</div>`).join('')
+      || '<p class="aside">Nothing logged.</p>'}</div>`;
+
+  el('hist-close').onclick = () => { box.hidden = true; box.innerHTML = ''; };
+  box.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function paintHints() {
@@ -355,6 +480,45 @@ const CHEATS = [
   { label: 'span.gap', what: 'blank to be filled in',      snip: '<span class="gap">1</span>' },
   { label: 'hr.rule',  what: 'short centred divider',      snip: '<hr class="rule">' },
 ];
+
+// Starting point for a grid stage, so choosing the type does not leave you
+// staring at an empty box wondering what shape the JSON is meant to be.
+const GRID_TEMPLATE = JSON.stringify({
+  categories: {
+    Shelf:    ["1","2","3","4","5"],
+    Author:   ["Bronte","Gaskell","Trollope","Eliot","Hardy"],
+    Decade:   ["1840s","1850s","1860s","1870s","1880s"],
+    Borrower: ["Kerr","Vance","Prynne","Hale","Osgood"]
+  },
+  clues: [
+    "Prynne borrowed the volume two shelves to the right of Osgood's.",
+    "Kerr borrowed Gaskell."
+  ]
+}, null, 2);
+
+// Returns an error string, or null when the payload is usable.
+function gridPayloadError(text) {
+  let p;
+  try { p = JSON.parse(text); }
+  catch (e) { return 'Not valid JSON: ' + e.message; }
+  if (!p || typeof p !== 'object') return 'Must be a JSON object.';
+  if (!p.categories || typeof p.categories !== 'object')
+    return 'Missing "categories" object.';
+  const keys = Object.keys(p.categories);
+  if (keys.length < 2) return 'Need at least two categories (rows plus one column).';
+  for (const k of keys) {
+    if (!Array.isArray(p.categories[k]) || !p.categories[k].length)
+      return `Category "${k}" must be a non-empty array.`;
+  }
+  const n = p.categories[keys[0]].length;
+  for (const k of keys) {
+    if (p.categories[k].length !== n)
+      return `Every category needs the same number of values; "${k}" has `
+           + `${p.categories[k].length}, "${keys[0]}" has ${n}.`;
+  }
+  if (!Array.isArray(p.clues) || !p.clues.length) return 'Needs a non-empty "clues" array.';
+  return null;
+}
 
 async function loadContentEditor() {
   const { data } = await sb.from('stages').select('*').order('number');
@@ -471,6 +635,21 @@ async function renderStageEditor(num) {
           <option value="completion" ${stage.kind==='completion'?'selected':''}>Completion (teacher-reviewed writing)</option>
         </select>
 
+        <div id="ed-payload-wrap" ${stage.kind === 'grid' ? '' : 'hidden'}>
+          <label style="margin-top:1rem">Grid definition (JSON)</label>
+          <p class="aside" style="margin:.2rem 0 .4rem">
+            First category is the row down the left; the rest become columns.
+            Clues are shown as a tickable list.</p>
+          <textarea id="ed-payload" rows="14" spellcheck="false"
+            style="width:100%;font-family:var(--mono);font-size:.78rem;background:var(--card);
+            border:1px solid var(--edge);padding:.75rem;color:var(--ink);resize:vertical"
+            >${esc(stage.payload ? JSON.stringify(stage.payload, null, 2) : GRID_TEMPLATE)}</textarea>
+          <div class="row" style="margin-top:.5rem">
+            <button type="button" class="quiet" id="ed-payload-check">Check JSON</button>
+            <span id="ed-payload-msg" class="aside"></span>
+          </div>
+        </div>
+
         <div class="row" style="margin-top:1.25rem">
           <button id="ed-save-stage">Save stage text</button>
           <span id="ed-stage-msg" class="aside"></span>
@@ -481,14 +660,18 @@ async function renderStageEditor(num) {
         <p class="aside" style="margin-bottom:.75rem;font-size:.75rem;
            text-transform:uppercase;letter-spacing:.1em">Live preview</p>
         <div class="preview-frame">
-          <div class="stagehead" style="text-align:center;margin-bottom:1.5rem">
-            <p class="numeral" id="prev-numeral" style="margin:0 auto 0.5rem"></p>
-            <span class="of" id="prev-of"></span>
-            <h2 id="prev-title" style="margin-top:.5rem"></h2>
-            <p class="aside" id="prev-subtitle"></p>
-            <hr class="rule">
+          <div class="preview-scale" id="prev-scale">
+            <div class="preview-page" id="prev-page">
+              <div class="stagehead" style="text-align:center;margin-bottom:1.5rem">
+                <p class="numeral" id="prev-numeral" style="margin:0 auto 0.5rem"></p>
+                <span class="of" id="prev-of"></span>
+                <h2 id="prev-title" style="margin-top:.5rem"></h2>
+                <p class="aside" id="prev-subtitle"></p>
+                <hr class="rule">
+              </div>
+              <div class="body" id="prev-body"></div>
+            </div>
           </div>
-          <div class="body" id="prev-body"></div>
         </div>
       </div>
     </div>
@@ -532,6 +715,17 @@ async function renderStageEditor(num) {
   // Live preview
   const roman = n => ['','I','II','III','IV','V','VI','VII','VIII','IX','X'][n] || String(n);
   const totalStages = stages.length;
+  // The preview renders at the student's real column width and type size, then
+  // scales down to fit the panel. Rendering it small instead would change where
+  // lines break and how far the drop cap reaches, i.e. it would lie.
+  function fitPreview() {
+    const page = el('prev-page'), scale = el('prev-scale');
+    if (!page || !scale) return;
+    const k = Math.min(1, scale.clientWidth / page.offsetWidth);
+    page.style.transform = `scale(${k})`;
+    scale.style.height = (page.offsetHeight * k) + 'px';
+  }
+
   function updatePreview() {
     el('prev-numeral').textContent = roman(stage.number);
     el('prev-of').textContent = `Stage ${stage.number} of ${totalStages}`;
@@ -540,7 +734,9 @@ async function renderStageEditor(num) {
     el('prev-subtitle').textContent = sub;
     el('prev-subtitle').hidden = !sub;
     el('prev-body').innerHTML = el('ed-body').value;
+    fitPreview();
   }
+  window.addEventListener('resize', fitPreview);
   ['ed-title','ed-subtitle','ed-body'].forEach(id =>
     el(id).addEventListener('input', updatePreview));
   updatePreview();
@@ -551,6 +747,17 @@ async function renderStageEditor(num) {
   ed.addEventListener('input',  () => { editorDirty = true; });
   ed.addEventListener('change', () => { editorDirty = true; });
   el('ed-body').addEventListener('focus', e => { e.target.dataset.touched = '1'; });
+
+  // Show the grid box only for grid stages, so the type is never a dead end.
+  el('ed-kind').addEventListener('change', () => {
+    el('ed-payload-wrap').hidden = el('ed-kind').value !== 'grid';
+  });
+  el('ed-payload-check').onclick = () => {
+    const err = gridPayloadError(el('ed-payload').value);
+    const msg = el('ed-payload-msg');
+    msg.textContent = err || 'Looks valid.';
+    msg.style.color = err ? 'var(--alarm)' : 'var(--ok)';
+  };
 
   ed.querySelectorAll('[data-cheat]').forEach(b => b.onclick = () => {
     const { snip } = CHEATS[Number(b.dataset.cheat)];
@@ -570,14 +777,29 @@ async function renderStageEditor(num) {
   // Wire save stage
   el('ed-save-stage').onclick = async () => {
     const msg = el('ed-stage-msg');
+    const kind = el('ed-kind').value;
+
+    // Refuse rather than save a grid stage students cannot solve.
+    let payload = null;
+    if (kind === 'grid') {
+      const err = gridPayloadError(el('ed-payload').value);
+      if (err) {
+        msg.textContent = 'Not saved — ' + err;
+        el('ed-payload-msg').textContent = err;
+        el('ed-payload-msg').style.color = 'var(--alarm)';
+        return;
+      }
+      payload = JSON.parse(el('ed-payload').value);
+    }
+
     msg.textContent = 'Saving…';
     const { error } = await sb.from('stages').update({
       title:       el('ed-title').value.trim(),
       subtitle:    el('ed-subtitle').value.trim() || null,
       body_html:   el('ed-body').value,
       min_seconds: Number(el('ed-floor').value),
-      kind:        el('ed-kind').value,
-      payload:     el('ed-kind').value === 'grid' ? stage.payload : null
+      kind,
+      payload
     }).eq('number', num);
     msg.textContent = error ? 'Error: ' + error.message : 'Saved.';
     if (!error) {
@@ -588,7 +810,8 @@ async function renderStageEditor(num) {
       if (s) {
         s.title     = el('ed-title').value.trim();
         s.body_html = el('ed-body').value;
-        s.kind      = el('ed-kind').value;
+        s.kind      = kind;
+        s.payload   = payload;
       }
       el('stage-pick').querySelector(`option[value="${num}"]`).textContent =
         `Stage ${num} — ${el('ed-title').value.trim()}`;
